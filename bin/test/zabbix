@@ -1,0 +1,167 @@
+/data/www/install/flume-monitor
+
+/data/www/logs/flume-monitor
+
+monitor.server.51xianqu.net
+
+
+
+java -jar -Dbamboo.agent.ignoreServerCertName=true \
+-Dbamboo.home=/data/www/install/bamboo-home  \
+atlassian-bamboo-agent-installer-5.9.2.jar \
+http://trade.ci.51xianqu.net/agentServer/
+
+
+
+mkdir -p /usr/local/prometheus/bin && cd /usr/local/prometheus/bin && wget http://res.51xianqu.net/software/PROMETHEUS/bin/prometheus_update && chmod +x prometheus_update && ./prometheus_update -x=http://res.51xianqu.net/software/PROMETHEUS/etc/prometheus_update.conf -i && source /etc/profile
+
+
+
+
+#!/bin/bash
+
+sudo bash
+
+echo 'ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA2NvE3sQuVVB6pgOUGs06+4/o489RG3Mk/EDA37qAiFkGNNGzH0lPvJyom1PQ/5xDggIyYpTGH/aFS/3Wdw7PKOCH1ZDSyZZcLva6D0iCOjpZfi5L8hre8sqbkZ//NhTWX9cn/7NnA8hfIxpVizYmrpW6Jru2OTfzvFaVV4F68RnClxv3cjiOo3ayuZSFT2k3hTnqPC/8UBLosdWoVBFwOh5zOeva6OSDAxqwMe7fayqqS2HQIUCbidMQnHt49TG+lBuMcMcdeKBLsmDflxyotxmZWMOTazmT5xB6wn1MVAP75EuHc6Qd+6VwSuHUhC7QKqPPaxD04VFMYf0et0W5yw== root@zabbix.51xianqu.net' >> /home/xqadmin/.ssh/authorized.keys
+
+mkdir -p /root/.ssh
+cat << EOF > /root/.ssh/id_rsa
+-----BEGIN RSA PRIVATE KEY-----
+MIIEoQIBAAKCAQEA2NvE3sQuVVB6pgOUGs06+4/o489RG3Mk/EDA37qAiFkGNNGz
+H0lPvJyom1PQ/5xDggIyYpTGH/aFS/3Wdw7PKOCH1ZDSyZZcLva6D0iCOjpZfi5L
+8hre8sqbkZ//NhTWX9cn/7NnA8hfIxpVizYmrpW6Jru2OTfzvFaVV4F68RnClxv3
+cjiOo3ayuZSFT2k3hTnqPC/8UBLosdWoVBFwOh5zOeva6OSDAxqwMe7fayqqS2HQ
+IUCbidMQnHt49TG+lBuMcMcdeKBLsmDflxyotxmZWMOTazmT5xB6wn1MVAP75EuH
+c6Qd+6VwSuHUhC7QKqPPaxD04VFMYf0et0W5ywIBIwKCAQAYyKjJAHpS5KBNfMB4
+F3R0hXmzoqovBdhXV9uHSIO3z6jwF/c2xozFGTfXPMdtq3Vt8Z9buTs22lhgdMgN
+m0rgGakfuMeiAo4xQMTOi/GgQS7Ml5Omo/w5ATZZySR7NZTXwNFfDTBYNCghRNaT
+kSj+Anusp70N2oJBaPsf8YpkskbEOm7edrr5az8vecWnvFYX6M08fuDobnkoQoFu
+cb8OYFq93iByw6Cg8xYYhIOFyfjIep8puj4Df9LsV6dIPRStyuYszDNPRyI7T/Sx
+k8umPU/5HRebucV/edyDwuUhsg0d4tkEaSSpynCzvQz0cafm0AOHIFrdYiBtSrXw
+zDUrAoGBAPGWp6++fsZEtmnZCdoDMuytrI2ONIfSm9LdyR4S//SbsJu9YIsdqEm6
+5+xnYs/ZmrksHB0QVc60onS4+JRJyov9h8G2abxFKt1IPHtVVMjM2qESfaThtNbg
+oJKl/0i/0SG4ElX25yoacP7NMQU69WaBrDzZfYZ8HHLqh32mthGFAoGBAOXLdP2Z
+KuRYVeABISnQhlmGWFjcpUSLsHGzxp26rjPgor1/M7PfDHvH48J0BJC+6LBFFMJj
+zS42kiZPg+zzUL2l5GyyYqA9xwLjKMcv+qn7pnyCh1/26zzrBZ6blK6tXOdmuEaW
+JPMTiRdY+p3uVuyFW3OzOFNUGj27J+kVlNcPAoGAWbudXoiVfNexd8Wkks38+NLL
+EAGee5decuSpyVeDo/9QOdigM6vuDMHD23bbjweuf0rl3ujPagiUHLm7akdLO0+K
+MgHswkWTlATjQ8Cb1Y3qzhzPlQNgbRGauiBmIlXf9pTTnEXDk0umUAMSNSSHCNEU
+Fpnsy40vI15s1uYmXkcCgYEA0hkagXYYlkIioOsXAai1WSpfZzAiEsjb1auuRxEU
+TLAfwzJ4afCAcSvI7EzQ+V4WkohNfoch/l3Hc3vmVPu3iNIv7lnzxbTTNdcAth08
+8y85IWFl1BT0VPQiZSCH8Cl5gxwWMehcS/SamQDlIq4GVJcvCrJ8o/UfTmH4mpdj
+gssCgYBsu/0Mu8E1dqEy4ETQyiOhocW9/nPb7/M9PIAVT37zuPEDqaYZzJlNoP1Q
+glYj2oFC/HISdCXhOKms5FgUc8gFO9jsbaFj7YnNQ+agNwBrqM3vzVdj3IuneX5z
+2+lykNJjItEmTwU6z/m/wWhURteq5ebuxIuTbDzodiAKhK5qTQ==
+-----END RSA PRIVATE KEY-----
+EOF
+
+chmod 400 /root/.ssh/id_rsa
+
+
+
+
+
+
+AAABAQ0ODAoPeNp1kM1PhDAQxe/9K5p4hlBWdpWkB2WJMeHDuOjJSyED27i0OC24/PfysYnG6GEu8
++a998tcFceeZnqgXkDZbXjNQn9Do0NBfY8FZA+mQtlZqRV/QK2HkRbCvBtaa6T3oi21fgtpPIhTL
++YjkvVtCZjXLwbQcIeRCGFR9sICnzMdxhxvS7493GIP5CQrUAZeJ9u880kqpLKghKogPncSxx8J/
+pygsXHNp6ytWy4gbrMAujDZsENpYE3OsRFKmrUrYGcp1EdPDnHGp3GS7S7YbW48kqwAf3ddxGLsI
+BMt8ChP0/g5erxL/sUQlZXDBeGpx+ooDPx+whddUn8kMCwCFHmnVH8LmLo9fXvQhlMqW+gl8sxgA
+hRr6hTaPIVlFvTSSyjA11IbMbxk9Q==X02d9
+
+Description=Groovy Tasks for Bamboo\: Evaluation,
+NumberOfUsers=-1,
+CreationDate=2015-11-06,
+Evaluation=false,
+licenseVersion=2,
+MaintenanceExpiryDate=2015-12-06,
+org.swift.bamboo.groovy.enterprise=true,
+Organisation=51sdg,
+SEN=SEN-L6757380,
+LicenseExpiryDate=2015-12-06,
+LicenseTypeName=COMMERCIAL,
+org.swift.bamboo.groovy.active=true,
+PurchaseDate=2015-11-06
+
+
+
+
+
+Description=Groovy Tasks for Bamboo\: Evaluation,
+NumberOfUsers=-1,
+CreationDate=2015-11-06,
+Evaluation=true,
+licenseVersion=2,
+MaintenanceExpiryDate=2016-12-06,
+org.swift.bamboo.groovy.enterprise=true,
+Organisation=51sdg,
+LicenseExpiryDate=2016-12-06,
+LicenseTypeName=COMMERCIAL,
+org.swift.bamboo.groovy.active=true,
+PurchaseDate=2015-11-06
+
+
+ServerID=BUVU-A6OL-5QDT-J2MO,
+SEN=SEN-L6757380,
+
+
+#!/bin/bash
+/usr/local/prometheus/tools/zabbix_api_tomcat.py \
+--add-host \
+10.161.221.131 auc-tomcat-10.161.221.131 tomcat_auc \
+'Template JMX Tomcat 6','Template JMX Generic'  \
+10000 auc 8080
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py \
+--add-host \
+10.252.83.126 auc-tomcat-10.252.83.126 tomcat_auc \
+'Template JMX Tomcat 6','Template JMX Generic'  \
+10000 auc 8080
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py \
+--add-host \
+10.161.226.132 auc-tomcat-gray tomcat_auc \
+'Template JMX Tomcat 6','Template JMX Generic'  \
+10000 auc 8080
+
+
+
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py \
+--add-host \
+10.162.100.89 centralbank-tomcat-10.162.100.89 tomcat_centralbank \
+'Template JMX Tomcat 6','Template JMX Generic'  \
+10000 centralbank 8080
+
+
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py \
+--add-host \
+10.251.247.55 centralbank-tomcat-10.251.247.55 tomcat_centralbank \
+'Template JMX Tomcat 6','Template JMX Generic'  \
+10000 centralbank 8080
+
+
+
+echo 'ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA2NvE3sQuVVB6pgOUGs06+4/o489RG3Mk/EDA37qAiFkGNNGzH0lPvJyom1PQ/5xDggIyYpTGH/aFS/3Wdw7PKOCH1ZDSyZZcLva6D0iCOjpZfi5L8hre8sqbkZ//NhTWX9cn/7NnA8hfIxpVizYmrpW6Jru2OTfzvFaVV4F68RnClxv3cjiOo3ayuZSFT2k3hTnqPC/8UBLosdWoVBFwOh5zOeva6OSDAxqwMe7fayqqS2HQIUCbidMQnHt49TG+lBuMcMcdeKBLsmDflxyotxmZWMOTazmT5xB6wn1MVAP75EuHc6Qd+6VwSuHUhC7QKqPPaxD04VFMYf0et0W5yw== root@zabbix.51xianqu.net' >> /home/dba/.ssh/authorized.keys
+
+
+tomcat v7.0.65
+TOMCAT_PKG_7065='http://res.swomc.net/software/tomcat/tomcat-7/v7.0.65/bin/apache-tomcat-7.0.65.zip'
+TOMCAT_PKG_MD5_7065=0e93455e0d19b88307e001aabea0d5f9
+TOMCAT_JMX_REMOTE_7065='http://res.swomc.net/software/tomcat/tomcat-7/v7.0.65/bin/extras/catalina-jmx-remote.jar'
+TOMCAT_JMX_REMOTE_MD5_7065=88197ba473152d129485697429b8061d
+TOMCAT_JULI_ADAPTERS_7065='http://res.swomc.net/software/tomcat/tomcat-7/v7.0.65/bin/extras/tomcat-juli-adapters.jar'
+TOMCAT_JULI_ADAPTERS_MD5_7065=9bd3fe6e866a6ac51f4fd8885a07db93
+TOMCAT_JULI_7065='http://res.swomc.net/software/tomcat/tomcat-7/v7.0.65/bin/extras/tomcat-juli.jar'
+TOMCAT_JULI_MD5_7065=1060111bd584db584a367d386dc03166
+
+tomcat v8.0.28
+TOMCAT_PKG_8028='http://res.swomc.net/software/tomcat/tomcat-8/v8.0.28/bin/apache-tomcat-8.0.28.zip'
+TOMCAT_PKG_MD5_8028=ddd0dd52b6a8ec4b3e0bb78c0f8b57dd
+TOMCAT_JMX_REMOTE_8028='http://res.swomc.net/software/tomcat/tomcat-8/v8.0.28/bin/extras/catalina-jmx-remote.jar'
+TOMCAT_JMX_REMOTE_MD5_8028=d6b76cdeca41abd49e95638f8d3c37f0
+TOMCAT_JULI_ADAPTERS_8028='http://res.swomc.net/software/tomcat/tomcat-8/v8.0.28/bin/extras/tomcat-juli-adapters.jar'
+TOMCAT_JULI_ADAPTERS_MD5_8028=72c5604f41fec5e4774c4879848fb120
+TOMCAT_JULI_8028='http://res.swomc.net/software/tomcat/tomcat-8/v8.0.28/bin/extras/tomcat-juli.jar'
+TOMCAT_JULI_MD5_8028=24288f3058f6eae759d796f35d995398

@@ -1,0 +1,105 @@
+#!/bin/bash
+
+function config(){
+
+  ZABBIX_KEY="Tomcat.Perf"
+
+  SERVER_NAME="-"
+
+  MONITOR_FILE="monitor.log"
+
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  ZABBIX_TIMESTAMP=
+  # 加载函数
+  source /etc/profile
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi      
+  # 加载TOMCAT配置
+  loadConf tomcat_setenv.conf ;
+  # 加载statistic配置
+  #loadConf statistic.conf ;
+}
+
+function acq_monitor_path(){
+  # 取日志路径
+  local tomcatAppName=${TOMCAT_APP_NAME_OPT[0]}
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  local appLogsPath=/data/www/logs/apps/${tomcatHttpPort}-${tomcatAppName}/app/${MONITOR_FILE}
+  echo ${appLogsPath}
+}
+
+function acqTimestamp_sys(){
+  # 取当前时间戳
+  local timestamp=$(date +%s)
+  echo ${timestamp} 
+}
+
+
+function acqTimestamp_log(){
+  # 取日志时间戳
+  # @Param log_line
+  local log_line=$@
+  local log_date=`awk '{print $1" "$2}' <<< ${log_line}`
+  local timestamp=`date -d "${log_date}" +%s`
+  timestamp=$(( ${timestamp} + `awk '{print $3}' <<< ${log_line}` ))
+  echo ${timestamp}
+}
+
+function doStatistic(){
+  local appLogsPath=`acq_monitor_path`
+  local i=0
+  local maxValue=0
+  local log_line=`tail -n 1 ${appLogsPath}`
+  ZABBIX_TIMESTAMP=`acqTimestamp_log ${log_line}`
+  IFS=$'\t\n\ '
+  for line in ${log_line} ; do
+      i=$(( $i + 1 ))
+      if [[ $i -ge 4 ]] ; then
+         local key=`awk -F: '{print $1}' <<< ${line}`
+         local values=`awk -F: '{print $NF}' <<< ${line}`
+         test ".${values}" = . && continue
+         doStatistic_ ${key} ${values} ;
+      fi
+  done
+}
+
+function doStatistic_(){
+  # 处理数据
+  local key=$1
+  local values=$2
+  local value
+  local i=0
+  IFS=$','
+  for value in ${values} ; do
+      i=$(( $i + 1 ))
+      case "$i" in
+        1) key_name=${key}".tps" ;;
+        2) key_name=${key}".total" ;;
+        3) key_name=${key}".success" ;;
+        4) key_name=${key}".failed" ;;
+        5) key_name=${key}".avgResponseTime" ;;
+        6) key_name=${key}".maxTime" ;;
+      esac  
+      do_sender ${ZABBIX_KEY}"."${key_name} ${value};
+  done
+}
+
+function do_sender(){
+  local zabbix_key=$1
+  local zabbix_value=$2
+  if [ -n "${zabbix_value}" ] ; then
+     echoPlus info "${SERVER_NAME} ${zabbix_key} ${ZABBIX_TIMESTAMP} ${zabbix_value}"
+     echo "${SERVER_NAME} ${zabbix_key} ${ZABBIX_TIMESTAMP} ${zabbix_value}" | /usr/local/zabbix/bin/zabbix_sender -T -vv -c /usr/local/zabbix/etc/zabbix_agentd.conf -i-
+  fi
+}
+
+config ;
+#acq_failed_max_cnt ;
+doStatistic ;
+

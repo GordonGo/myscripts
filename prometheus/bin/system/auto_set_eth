@@ -1,0 +1,81 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  EZtomcat auto set eth
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+
+# chkconfig:   - 85 15
+function config(){
+  # on service
+  . /etc/profile
+  
+  PERSISTENT_NET_FILE='/etc/udev/rules.d/70-persistent-net.rules'
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi 
+
+  # 加载PROMETHEUS配置
+  loadConf prometheus.conf ;
+}
+
+function doSet(){
+  local ethAddress=`acqEthAddress ${PERSISTENT_NET_FILE} eth1`
+  checkError ;
+  if [ ".${ethAddress}" == "." ] ; then
+     exit 0 ;
+  fi
+  sed -i "`acqEthAddressLine ${PERSISTENT_NET_FILE} eth0`d" ${PERSISTENT_NET_FILE}
+  sed -i "s#eth1#eth0#g" ${PERSISTENT_NET_FILE}
+  buildEthCfg /etc/sysconfig/network-scripts/ifcfg-eth0 eth0 ${ethAddress} ;
+  doChgHostname ;
+}
+
+function doChgHostname(){
+  [ ".${HOST_NAME}" == "." ] && return ;
+  ${PROMETHEUS_HOME}/bin/system/chg_hostname -hostname=${HOST_NAME} -ip=${SET_IPADDR}
+}
+
+function buildEthCfg(){
+local file=$1
+local ethX=$2
+local ethAddress=$3
+cat << EOF > ${file}
+DEVICE=${ethX}
+TYPE=Ethernet
+#UUID=
+ONBOOT=yes
+NM_CONTROLLED=yes
+BOOTPROTO=none
+HWADDR=${ethAddress}
+IPADDR=${SET_IPADDR}
+PREFIX=${SET_PREFIX}
+GATEWAY=${SET_GATEWAY}
+DNS1=${SET_DNS1}
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=yes
+IPV6INIT=no
+NAME="System ${ethX}"
+NETMASK=${SET_NETMASK}
+USERCTL=no
+EOF
+}
+
+
+function doService(){
+  start_udev
+  service network restart
+  chkconfig autoseteth off
+}
+
+config ;
+doSet ;
+doService ;
+exit 0 ;

@@ -1,0 +1,190 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  Mysql backup & recovery
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+#   2015-01-13
+#   1. 增加备份滚动，自动删除过期备份
+function config(){
+  . /etc/profile
+  #-------配置项(无需修改)--------------------------
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi      
+
+  # 加载PROMETHEUS配置
+  # loadConf mysqlbackup.conf ;
+  # mysql账号
+  DB_USER=root
+  # mysql密码
+  DB_PASSWORD='G9EnUVLsJ5ua9W2lGR9o8ckdhk.'
+
+  DB_HOST=127.0.0.1
+  # mysql bin目录路径
+  MYSQL_BIN='/opt/zimbra/mariadb/bin/'
+  # 备份目录
+  BACKUP_PATH='/data/www/backups/mysql_zimbra'
+  # 显示30行备份数据
+  LINE_CNT=30
+  # 备份保留天数 如果value=0 或 null 则不清理备份
+  BACKUP_DAY=30
+
+  TEMP_PATH='/data/www/temp'
+
+  #Mysql库名可以配置多个
+  # eg : DB_ALL_OPT=( db1 db2 db3 )
+  DB_ALL_OPT=( 
+       'zimbra'
+       'mboxgroup1'  'mboxgroup2'  'mboxgroup3'  'mboxgroup4'  'mboxgroup5'  'mboxgroup6'  'mboxgroup7'  'mboxgroup8'  'mboxgroup9'  'mboxgroup10' 
+       'mboxgroup11' 'mboxgroup12' 'mboxgroup13' 'mboxgroup14' 'mboxgroup15' 'mboxgroup16' 'mboxgroup17' 'mboxgroup18' 'mboxgroup19' 'mboxgroup20'
+       'mboxgroup21' 'mboxgroup22' 'mboxgroup23' 'mboxgroup24' 'mboxgroup25' 'mboxgroup26' 'mboxgroup27' 'mboxgroup28' 'mboxgroup29' 'mboxgroup30'  
+       'mboxgroup31' 'mboxgroup32' 'mboxgroup33' 'mboxgroup34' 'mboxgroup35' 'mboxgroup36' 'mboxgroup37' 'mboxgroup38' 'mboxgroup39' 'mboxgroup40'  
+       'mboxgroup41' 'mboxgroup42' 'mboxgroup43' 'mboxgroup44' 'mboxgroup45' 'mboxgroup46' 'mboxgroup47' 'mboxgroup48' 'mboxgroup49' 'mboxgroup50'  
+       'mboxgroup51' 'mboxgroup52' 'mboxgroup53' 'mboxgroup54' 'mboxgroup55' 'mboxgroup56' 'mboxgroup57' 'mboxgroup58' 'mboxgroup59' 'mboxgroup60'
+       'mboxgroup61' 'mboxgroup62' 'mboxgroup63' 'mboxgroup64' 'mboxgroup65' 'mboxgroup66' 'mboxgroup67' 'mboxgroup68' 'mboxgroup69' 'mboxgroup70' 
+       'mboxgroup71' 'mboxgroup72' 'mboxgroup73' 'mboxgroup74' 'mboxgroup75' 'mboxgroup76' 'mboxgroup77' 'mboxgroup78' 'mboxgroup79' 'mboxgroup80' 
+       'mboxgroup81' 'mboxgroup82' 'mboxgroup83' 'mboxgroup84' 'mboxgroup85' 'mboxgroup86' 'mboxgroup87' 'mboxgroup88' 'mboxgroup89' 'mboxgroup90' 
+       'mboxgroup91' 'mboxgroup92' 'mboxgroup93' 'mboxgroup94' 'mboxgroup95' 'mboxgroup96' 'mboxgroup97' 'mboxgroup98' 'mboxgroup99' 'mboxgroup100' 
+  )
+  # debug log
+  DEBUG_FILE_NAME=$(basename $0).log
+}
+
+function help() {
+  # 显示帮助
+  echoPlus 32 "backupdb 无参数则自动备份,可用于crontab"
+  echoPlus 32 "backupdb m|manual 手动备份(备份的目录不一样)"
+  echoPlus 32 "backupdb r|recovery 恢复数据库"
+}
+
+function dbbackup(){
+  # 备份数据库
+  # @param dbname
+  # @param path
+  local dbname=$1
+  local backupPath=$2
+  execMkdir ${backupPath} ;
+  ${MYSQL_BIN}/mysqldump -S/opt/zimbra/db/mysql.sock --single-transaction -u${DB_USER} -p${DB_PASSWORD} ${dbname} > ${backupPath}/${dbname}.sql 2>/dev/null
+  checkError ;
+}
+
+function dbrecovery(){
+  # 恢复
+  # @param dbname
+  # @param path
+  local dbname=$1
+  local backupPath=$2
+  execMkdir ${backupPath} ;
+  ${MYSQL_BIN}/mysql -S/opt/zimbra/db/mysql.sock -u${DB_USER} -p${DB_PASSWORD} ${dbname} < ${backupPath}/${dbname}.sql 2>/dev/null
+  checkError ;
+}
+
+function doBackup(){
+  # 备份所有数据库
+  # @param path
+  local backupPath=$1
+  local db
+	for db in ${DB_ALL_OPT[@]}; do
+      dbbackup ${db} ${backupPath}
+	done
+}
+
+function doRecovery(){
+  # 恢复所有数据库
+  # @param path	
+  local backupPath=$1
+  local db
+	for db in ${DB_ALL_OPT[@]}; do
+      echoPlus info "dbrecovery ${db} ${backupPath}"
+      dbrecovery ${db} ${backupPath}
+	done
+}
+
+function recoveryByType(){
+  # @param type  (0 auto   1 manual)
+  local recoveryType=$1
+  [ -f ${TEMP_PATH}/db_backup_path.log ] && rm -f ${TEMP_PATH}/db_backup_path.log
+  [ ".${recoveryType}" == ".0" ] && find ${BACKUP_PATH}/* -type d | grep -v manual | sort -r >> ${TEMP_PATH}/db_backup_path.log
+  [ ".${recoveryType}" == ".1" ] && find ${BACKUP_PATH}/manual/* -type d | sort -r >> ${TEMP_PATH}/db_backup_path.log
+  while true ; do
+    local i=1
+    local line
+    for line in `head -n ${LINE_CNT} ${TEMP_PATH}/db_backup_path.log` ; do
+  	    date=`echo ${line} | awk -F'/' '{print $NF}'`
+        echo $i") "${date}"."
+        let i++
+    done
+    read -p "please select: " quick
+    [ "${quick}" -ge "1" ] && [ "${quick}" -le "${LINE_CNT}" ] && break
+  done
+  local recovery_path=`sed -n "${quick}p" ${TEMP_PATH}/db_backup_path.log`
+  doRecovery ${recovery_path} ;
+  exit 0 ;
+}
+
+
+
+function recoveryStart(){
+  while true ; do
+        stty erase "^H"
+        echoPlus 32 "1) Recovery auto backupdb."
+        echoPlus 36 "2) Recovery manual backupdb."
+        echoPlus 31 "3) exit."
+        read -p "please select: " quick
+        case $quick in
+	           1) echoPlus 32 "you select recovery auto backupdb." 
+                recoveryByType 0 ; 
+                break;;
+	           2) echoPlus 32 "you select recovery manual backupdb." ; 
+                recoveryByType 1 ; 
+                break;;
+	           3) echoPlus 33 "you select exit." ; exit 1;;
+             *) echoPlus 31 "input error.";;
+        esac
+  done
+}
+
+function doParam(){
+  if [ $# == 0 ] ;then
+     doBackup ${BACKUP_PATH}/$(date +%Y%m%d-%R) 
+     echoPlus 32 "db backup path : ${BACKUP_PATH}/$(date +%Y%m%d-%R)"
+     exit 0;
+  fi
+
+  case "$1" in
+       m|manual)
+          doBackup ${BACKUP_PATH}/manual/$(date +%Y%m%d-%R) 
+          echoPlus 32 "db backup path = ${BACKUP_PATH}/manual/$(date +%Y%m%d-%R)"
+          ;;
+       r|recovery)
+          recoveryStart ;;
+       h|help)
+          help
+          exit 0 ;
+  esac
+}
+
+function doRoll(){
+  # 备份滚动，清理过期备份
+  
+  if [ ".${BACKUP_DAY}" == "." ] || [ "${BACKUP_DAY}" == "0" ] ; then
+     return 0;
+  fi
+  # 清理文件
+  find ${BACKUP_PATH} -type f -mtime +${BACKUP_DAY} -exec rm -rf {} \; 2>/dev/null
+  # 清理空目录
+  #find ${BACKUP_PATH} -type d -exec rmdir {} \; 2>/dev/null
+  find ${BACKUP_PATH} -type d -empty -exec rmdir {} \; 2>/dev/null
+  echoPlus info "Clean up backup files ！" ;
+}
+
+config ;
+doRoll ;
+doParam $@ ;

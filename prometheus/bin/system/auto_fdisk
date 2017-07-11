@@ -1,0 +1,187 @@
+#!/bin/bash
+#########################################
+#Function:    auto fdisk
+#Usage:       bash auto_fdisk.sh
+#Author:      Customer service department
+#Company:     Alibaba Cloud Computing
+#Version:     2.0
+#########################################
+# 增加磁盘扫描代码
+count=0
+tmp1=/tmp/.tmp1
+tmp2=/tmp/.tmp2
+>$tmp1
+>$tmp2
+
+FSTAB_FILE='/etc/fstab'
+MOUNT_LOCAL_DIR='data_new'
+#ext3 or ext4
+EXT_X='ext4'
+
+#check lock file ,one time only let the script run one time 
+LOCKfile=/tmp/.$(basename $0)
+
+if [ -f "$LOCKfile" ]
+then
+  echo -e "\033[1;40;31mThe script is already exist,please next time to run this script.\033[0m"
+  exit
+else
+  echo -e "\033[40;32mStep 1.No lock file,begin to create lock file and continue.\033[40;37m"
+  touch $LOCKfile
+fi
+
+#check user
+if [ $(id -u) != "0" ]
+then
+  echo -e "\033[1;40;31mError: You must be root to run this script, please use root to install this script.\033[0m"
+  rm -rf $LOCKfile
+  exit 1
+fi
+
+function doParam(){
+  local param=
+  [ $# == 0 ] && return ;
+  for param in "$@" ; do
+      local paramName=`echo ${param} | awk -F'=' '{print $1}'`
+      local paramValue=`echo ${param} | awk -F'=' '{print $NF}'`
+      case "${paramName}" in
+          -ext.type)
+              EXT_X=${paramValue} ;;
+          -mount.local.dir)
+              MOUNT_LOCAL_DIR=${paramValue} ;;
+      esac
+  done
+}
+
+function scsi_scan(){
+   local hostName
+   for hostName in `ls -l /sys/class/scsi_host | awk '{print $9}' |grep "host"` ; do
+       echo "scan /sys/class/scsi_host/${hostName}/scan"
+       echo "- - -" > /sys/class/scsi_host/${hostName}/scan
+   done
+}
+
+
+#check disk partition
+function check_disk()
+{
+  scsi_scan ;
+  >$LOCKfile
+  device_list=$(fdisk -l|grep "Disk"|grep "/dev"|awk '{print $2}'|awk -F: '{print $1}'|grep '[sd|xv]')
+  for i in `echo $device_list`
+  do
+    device_count=$(fdisk -l $i|grep "$i"|awk '{print $2}'|awk -F: '{print $1}'|wc -l)
+    echo 
+    if [ $device_count -lt 2 ]
+    then
+      now_mount=$(df -h)
+      if echo $now_mount|grep -w "$i" >/dev/null 2>&1
+      then
+        echo -e "\033[40;32mThe $i disk is mounted.\033[40;37m"
+      else
+        echo $i >>$LOCKfile
+        echo "You have a free disk,Now will fdisk it and mount it."
+      fi
+    fi
+  done
+  disk_list=$(cat $LOCKfile)
+  if [ "X$disk_list" == "X" ]
+  then
+    echo -e "\033[1;40;31mNo free disk need to be fdisk.Exit script.\033[0m"
+    rm -rf $LOCKfile
+    exit 0
+  else
+    echo -e "\033[40;32mThis system have free disk :\033[40;37m"
+    for i in `echo $disk_list`
+    do
+      echo "$i"
+      count=$((count+1))
+    done
+  fi
+}
+
+#fdisk ,formating and create the file system
+fdisk_fun()
+{
+fdisk -S 56 $1 << EOF
+n
+p
+1
+
+
+wq
+EOF
+
+sleep 5
+mkfs.${EXT_X} ${1}1
+}
+
+#make directory
+make_dir()
+{
+  echo -e "\033[40;32mStep 4.Begin to make directory\033[40;37m"
+  for j in `seq $count`
+  do
+    if [ -d "/${MOUNT_LOCAL_DIR}" ]
+    then
+      echo -e "\033[1;40;31m/data$j is exists.This script will exit,you must to choose a directory for mount.\033[0m"
+      rm -rf $LOCKfile $tmp2
+      exit
+    else
+      echo "/${MOUNT_LOCAL_DIR}" >>$tmp1
+      mkdir /${MOUNT_LOCAL_DIR}
+    fi
+  done
+ }
+
+function checkError(){
+  # 检查错误，如果运行错误则退出
+  if [ $? -ne 0 ] ; then 
+     echoPlus 91 "ERROR: exit ！"
+     exit 1 ;
+  fi
+}
+
+recovery_data(){
+  # 迁移数据
+  echo "Recover data !"
+  \cp -Rp /data/* /data_new/
+  checkError ;
+  rm -rf /data/*
+  umount /data_new
+  sed -i "s#/data_new#/data#g" /etc/fstab
+  mount /data
+}
+
+#config /etc/fstab and mount device
+main()
+{
+  for i in `echo $disk_list`
+  do
+    echo -e "\033[40;32mStep 3.Begin to fdisk free disk.\033[40;37m"
+    fdisk_fun $i
+    echo "${i}1" >>$tmp2
+  done
+  make_dir
+  >$LOCKfile
+  paste $tmp2 $tmp1 >$LOCKfile
+  echo -e "\033[40;32mStep 5.Begin to write configuration to /etc/fstab and mount device.\033[40;37m"
+  while read a b
+  do
+    if grep -v ^# ${FSTAB_FILE} |grep ${a} >/dev/null
+    then
+      sed -i "s=${a}*=#&=" ${FSTAB_FILE} 
+    fi
+    echo "${a}             $b                 ${EXT_X}    defaults        0 0" >> ${FSTAB_FILE} 
+  done <$LOCKfile
+  mount -a
+}
+
+#=========start script===========
+echo -e "\033[40;32mStep 2.Begin to check free disk.\033[40;37m"
+check_disk
+main
+df -h
+rm -rf $LOCKfile $tmp1 $tmp2
+# 如果要手动迁移请注释掉
+recovery_data ;

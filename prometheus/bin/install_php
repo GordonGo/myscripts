@@ -1,0 +1,137 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  install php
+#   AUTHOR: Liang Jian
+#   DATE: 2015 07
+#   QQ:  80327044
+#===============================================================================
+
+function config(){
+  #-------配置项--------------------------
+  . /etc/profile
+  
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  DEBUG=true
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi   
+}
+
+function install_php_init(){
+  # 安装php依赖
+  echoPlus info "php install init..."
+  execYum libxml2 libxml2-devel curl curl-devel libmcrypt libmcrypt-devel libjpeg libjpeg-devel libpng libpng-devel freetype freetype-devel openssl openssl-devel ;
+  install_php_init_
+}
+
+function install_php_init_(){
+  execWget http://res.51xianqu.net/software/php/libmcrypt-2.5.8.tar.gz ${PROMETHEUS_HOME}/pkg/php/ 0821830d930a86a5c69110837c55b7da
+  execWget http://res.51xianqu.net/software/php/mhash-0.9.9.9.tar.gz ${PROMETHEUS_HOME}/pkg/php/ ee66b7d5947deb760aeff3f028e27d25
+  execWget http://res.51xianqu.net/software/php/mcrypt-2.6.8.tar.gz ${PROMETHEUS_HOME}/pkg/php/ 97639f8821b10f80943fa17da302607e
+  LD_LIBRARY_PATH
+  export LD_LIBRARY_PATH=/usr/lib64:${LD_LIBRARY_PATH}
+  cd ${PROMETHEUS_HOME}/pkg/php/
+  tar zxvf libmcrypt-2.5.8.tar.gz
+  cd libmcrypt-2.5.8
+  ./configure --prefix=/usr/lib64
+  make && make install
+  cd -
+  tar zxvf mhash-0.9.9.9.tar.gz
+  cd mhash-0.9.9.9
+  ./configure
+  make && make install
+  cd -
+  tar zxvf mcrypt-2.6.8.tar.gz
+  cd mcrypt-2.6.8
+  ./configure --prefix=/usr/lib64
+  make && make install
+
+}
+
+
+
+function load_php_res(){
+  # 载入配置
+  test ".${PHP_RES}" = . && PHP_RES="http://121.41.86.96/software/PROMETHEUS/etc/php_res.conf"
+  loadUrlResFile ${PHP_RES} ;
+}
+
+function doInstall(){
+   create_account_www ;
+   doInstall_download ;
+   doInstall_unzip_pkg ;
+   doInstall_service  ;
+   doConfig_php ;
+}
+
+function create_account_www(){
+  # 创建账户
+  echoPlus 32 "Create account <www:www> ..."
+  groupadd www 2>/dev/null
+  useradd -g www www 2>/dev/null
+}
+
+function doInstall_download(){
+   # 下载资源包
+   if [ ".${PHP_PKG_MD5}" == "." ] || [ ".${PHP_PKG_MD5}" == ".-" ] ; then
+        execWget ${PHP_PKG_DOWNLOAD_URL} ${PROMETHEUS_HOME}/pkg/php/ ;
+   else
+        execWget ${PHP_PKG_DOWNLOAD_URL} ${PROMETHEUS_HOME}/pkg/php/ ${PHP_PKG_MD5} ;  
+   fi
+}
+
+function doInstall_unzip_pkg(){
+  # 解压包
+  local fileName=`basename ${PHP_PKG_DOWNLOAD_URL}`
+  execUnzip ${PROMETHEUS_HOME}/pkg/php/${fileName} ${PHP_INSTALL_PATH}
+  ln -sf ${PHP_INSTALL_PATH} /usr/local/php
+}
+
+function doInstall_service(){
+  # 创建服务
+  cd /etc/init.d
+  ln -sf ${PROMETHEUS_HOME}/service/php-fpm .
+  chkconfig php-fpm on
+  ln -sf ${PROMETHEUS_HOME}/service/pool_serverd .
+  chkconfig pool_serverd on
+}
+
+function doConfig_php(){
+  doConfig_php_log ;
+  execWget ${PHP_POOL_INI_DOWNLOAD_URL} ${PROMETHEUS_HOME}/pkg/php/
+  execCp ${PROMETHEUS_HOME}/pkg/php/pool.ini /etc/
+  execMkdir /data/www/conf/php
+  cd /data/www/conf/php
+  ln -sf /etc/pool.ini .
+  ln -sf /usr/local/php/etc .
+  execMkdir /var/run/php-fpm
+  touch /var/run/php-fpm/php-fpm.pid
+  chown -R www.www /var/run/php-fpm
+  execMkdir /var/lib/php/session
+  chown www.www -R /var/lib/php
+}
+
+function doConfig_php_log(){
+  mkdir -p /data/www/logs/php
+  mkdir -p /data/www/logs/php-fpm
+  chown www.www /data/www/logs/php
+  chown www.www /data/www/logs/php-fpm
+}
+
+config ;
+#doParam $@ ;
+load_php_res
+install_php_init ;
+doInstall ;
+service php-fpm start ;
+service pool_serverd start ;
+
+

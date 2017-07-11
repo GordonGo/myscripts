@@ -1,0 +1,205 @@
+#!/bin/bash
+
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  EZ tomcat System Config
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#   2015-03
+#===============================================================================
+
+
+function config(){
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi
+  # ssh配置
+  LOGIN_USER='xqadmin'
+  # 留空和USER同名
+  LOGIN_GROUP='root'
+  # 留空随机生成128位长度密码
+  PASSWORD=2e8c1032a85bfef91769f2dcdd80e2f3
+  
+  SSH_PORT=22
+  # sudo命令是否需要输入密码 true:需要 false:不需要
+  SUDO_PASSWD=false
+
+  # 生成随机证书 1:随机证书 0(default):在配置文件中定义的证书
+  RANDOM_AUTHORIZED_KEYS=0
+
+  # 加载PROMETHEUS配置
+  # loadConf sysconfig.conf ;
+
+}
+
+function doParam(){
+  local param=
+  [ $# == 0 ] && return ;
+  for param in "$@" ; do
+      local paramName=`echo ${param} | awk -F'=' '{print $1}'`
+      local paramValue=`echo ${param} | awk -F'=' '{print $NF}'`
+      case "${paramName}" in
+          -u|-user)
+              LOGIN_USER=${paramValue} ;;
+          -g|-group)
+              LOGIN_GROUP=${paramValue} ;;
+          -p|-password|-passwd)
+              PASSWORD=${paramValue} ;;
+          -P|-port)
+              SSH_PORT=${paramValue} ;;
+          -sp|-sudopasswd)    
+              SUDO_PASSWD=${paramValue} ;;
+
+          -h|-help)
+              prometheus_help $(basename $0) 
+              exit 0 ;;
+      esac
+  done
+}
+
+
+function buildRandomAuthorized_keys() {
+  # 创建随机证书
+  # @Param  authorized_keys file /home/${USER}/.ssh/authorized.keys
+  local file=$1
+  rm -f ${file}
+  rm -f ${file}.pub
+  ssh-keygen -t dsa -f ${file} -N123456
+}
+
+function buildAuthorized_keys() {
+# 创建证书
+# @Param  authorized_keys file /home/${USER}/.ssh/authorized.keys
+local file=$1
+local dn=`dirname $1`
+execMkdir ${dn}
+if [ ".${RANDOM_AUTHORIZED_KEYS}" == ".1" ] ; then
+   buildRandomAuthorized_keys ${file} ;
+else  
+cat << EOF > ${file}
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAs5VGMzUf/bQbkF3a8Wc965TY/hBfMdgr4+Ns8HIfZZ1NEIykXDgpml3gC8dBmEmBu+pdzL92wZTQEOa7m93usbbXTS6he6H2JaG3ep4pliSbin4E2S0qAIPfmto24j2X8fcNPpIo6bkeIK4N384tm1ynhWbjXkiX30p260pHbEPKMvhVUYaw7WJqCKkN15UdKPjA8Cg9KyXu1P1J+6rsyF3VOP+Rl5w30pv+O7jwfHBkd+QUiakf+aEt4fTeTrO+ysw4EduP6Scgt2zhEjclH3tNMlKvLfDsdxNM1MHPuW1U0NFUwcMTOliXcJJbv9wZWwgIC7LDRQQhg3rx+BTD0Q== liangjian@51xianqu.net
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAzjwu9swHjI371cI/kR+oe1LBUEZ0DGjyvYPN3r3FOlAl6n+CosG9ND/8lFgNjcv/sJbM3IHArBUZdIu/0haeU65lJ2B0rPemjkUD7AG/02eLpvhO2MOchFAOW0AlXqc1F42FvjcvR5L8u13kqXT5ltRUDi/O8h4MM1zmh43MupVOIMjGPGIv83XCNjXNlOm4IK9Jb1M0Mb1f9DCJC1EcAf4lPu9gWW74H9Us+cyFMwqzKJ7UujecjYYNM5gOsrH0v/f/imzaDb4WbTNRuDlIhyeFlzH0iZyA2zhFGH5iC7loiV1kx/o2lbWTI+UqbIkhfFCR3R17PaJlpWh9NVqx1w== authorized02@51xianqu.net
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAmiBjcnUl7gY51/1ZpLstcED7HeQvDDuHTwx/4z/EPyZGSkNoXIZkhAeDPMk1qIiG/Y49zYl4f8f3ydexhroHm3etaPi7l3BsfQqmMCRxjOXHHQcUb4sJCDaP1a3siFaNyiXHWSeCfI5MFhhh8nDkpWCg2GkT8bJvmOk8dW1vl2mZ5kRTARogvqHY6y5oa2IVYTilsZiwL4k/t6aQ44l52eVQ4FrfTiIwaCTUI7nT9BboyWGMneGYkkTW6bi2Xdx1FxuG2r4IBNADIa8V3yaLVA35RkTuCFvccBSgRW1GnGDUK0Fay/h/Fab1CPzG5vpd+ddaar6nkfqCra17OhqMTw== authorized03@51xianqu.net
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAt2Mqjli6dSUXTcBP1CsksPBly7Y1Ueqg8gB5t1+MoF0XGjtFpacGHpvPFTFLJ3YxD8DdQZNdaVRC1J8uvzahYoe7xa2lQw9XFdNLSb4E3JP08cRhvHsZjQnMZt2FoymAIkUxqlE2xucT5i/GMArENq/Yt59MAU4fC5OSPReYP5qx5JxJVM2M8ZRT9cNG1SUPB+1FWPYt8yN4tyAs1oFWBWxLLXgLqynzVJ5gbIDD0sHjMyoJzg0QpYsRe3dh9nFmeY5snTIgMwfOXxZytogvuf4ETxgkhxLfglf47+5aZfrY2i76vJSsKy5GHHS3H84/DtRq5nojWRXN7yqp0/f/eQ== authorized04@51xianqu.net
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAvRS+XjuRFSKA397uOPy/Au7ZCm2p8tivC+t2XQLTRVJcBkdqQIJJtiBM8RzJ/nWa92DipoVuO4PBl8ABq+FwjL5u8NR+EQZhHuCkJBO9G7Kvr4N7bwvlCTtEu3F3h37v6XT/kfekLGJ/dcgm2NXoYocgfXmpl6yEHA1fRAZ9zLGLrelr2zdEYweqsjLZeiDgYtMqhvhNnU2lA3gsI//G27mIFfy614rJsznsvH4wkLbDnwlBbZzAu9txw5QvVD+b8mSha3RHkK80KWfzvjM0I9DsdYNmIE7V/m/I5GP6YahNwWa4Qni/CJjbROkz4/CSaRYq+sEnx0xXLNP4JxHo1w== authorized05@51xianqu.net
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEApt0Q96uVxDrtDOFrODoRTq8ZoKk7Q5tPZYsqWzr5P3C2qKV7so4RaimNEb84sg8Rx+x/xf2CaNuNhiXed9XfBN4Z6qNDfys8+qWsTUqPQjjUaAz2/nU6ZSohClSbWH3sZ7/KZiYeMdE4KSzr3lm7sVawB/6iyiN9OnkOlK0RxwdQKc23feLbbTzwBYPu0q06MaRtcNnbLjnVI2tiJAgOqN1kfo+5RmMZ/U3vOSsHbe7NR3QHy+P7veMP39DdWiLgw5R/nxzQHM+bi16fLYT+uZAGejSzgTp2AHsCLU9zodNqFw3prRqzE+OaHGHEjLmQEy7DRTRb1B09NjN+O9iqpQ== authorized06@51xianqu.net
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA1uFpJXQ3C4oUQ3f6yN+vQDXX8oboBTfpznsKdSH1x1JE0sanT/b8zXdk07ZFfII3RKRTIbq0hm/oqPHlcKi6vbFflYtlGtqFLZsQWJXzlv8DW33JR5R2dWc10POKXhya0XjsfqQLxVH984ElzjoDzxaOl6FVzKJ+FeVvv4k2THqh8Derxtt1jZU3RpZJ0pfy3C5DWi6tWcVnVDosTH9UdCSRzIcgE7CHIr9vLTWrkSElY0lV8Isbk7nhxyIQvcUQ+te4yFfDLwFcBUHxgj6PQEAakI5jD0PKn/STNDJAQNW8yGtXbgNSc68mm6DFDXY5/0U5Lom7XxqbZsQ9f5Uavw== authorized07@51xianqu.net
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAy4M6iyt3ZXRma/R7EusxAqi0FwBI824eUQZxF+IXcrZ8Oqa8B5l4o6heSa6e46/08ODOQ/YJjuHKdWU/mOguTXsvTFbHwgKh80JjEH9hhL6XzCjZdZVDrIBF0V05L57eoEq/OnCOGp4lJvFSW7hCHXr/9xK/Wnz3aL9iwuGijcy4QxSTj8EHofX4X6JGid02zxTNVEJwL06rtqkQinpxHQwcV9cgwizkgl8qymFp21ICzZmV8EwWPWbphCo+oNTU9GDdvJwnpiQV6OONPxaXRXXnpSwXWy+4Jc11npy1dT6mkoBmbDjmWeccsZ1DBeR3vgE76tld5zqepXA39NUnCw== authorized08@51xianqu.net
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAwRbdbIw1f9fHvAeMezIQjhgoFZI0jxsU1PQTWiyy5ptP8P5sgwU1J1CqSwi6HlbiQRQJh6xUnJC35DqXlpNuM47lpCordT9p2l/AXzewFAFuFfQ+4o7qnU86NYnWTfwuS2H3oDzROVwAK8JHjVrckLKsm4Ta4FZ7zCuBfegOVGf63zxMJspUTLVx7o4GP9WVX7FJmOFbAbKmCQ6DsZ5v1HAqkeZ6j33iVM1gcVT+wYYlW4iNtKgdAvHndJKmiVfz9iSONro1WpJFEA0qo6o/PJbhPQorOMx9fo304Z7SBpCv1IOvlOxnqmF51/4dKrzx0Qs5xriVLykoHIviRAoICw== authorized09@51xianqu.net
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEApzIIm0KewSBE7NgARrpI8uAkULhAyxpFG/Y0VOCzqQ9TOFVPFP845SsoLTpU8wZqpO8/2agUWcVJFzKDEapv//5Xez022X5H4RnQJQIHCBSrcJ2xK7sn4z/pD7zLS+ojCa6MD/E0YIq9Mb5jr8Dpt00Ay6u70thcT47ACGph8zv9TZjGP/ziqPgJgo+zTZyw95mo7hTjfZ4EiKDWL7u7FwrvpsBBCEyY8c770tt2Cv7GbWCynsOFeLlDrSfAI28Sm+1qAT081fcoGHC88tJ6jyBODIPJXuQadeiDB707m0NRCunkEe61tNJKXs9rpHkVLBVzF5SyIrdhD6fWbrjznQ== authorized10@51xianqu.net
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAyhAbSF4g1kP+Va3C4vbG3vkgMQHSJGdUvT9UJEegofqUpgR4criRo0tjhUIUelvXTns2SESsfq17Jeji2Uj3G9arti8b+hVv+k+ExIWq5FNsmbftTmHQP05ivBzMtdwLkKMplNbNixdF0NI+dyC3ZS7QTcrAXkH3qpqocr8qMIFnIlN8kig7cO1WoNp91qGDljhjUYG3+9L4Kw/A6/aiZhLcHEqJXTPznIQz3uJcveP7TwnMrJTTyPl78vrtDOaXSHJ0nxEWIYpCHosq+oPcMrGCCwbYwoC1tg/lI4tW4MiNTGvWHYzDrzq/71mmC18SCAv7M165/kDwfHrBG0jEyw== authorized11@51xianqu.net
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA0y+2p4Ac6yYPPPdOa3rKaNamwc9Mdd95BIGN7rIRdjp4RkgRF2udWjQsoAP+O9YgJ5luLPK4qCDFjhRi5lMBUzswEJXKbSY/j6nqimSGdSLSVgtJn+S+r4VOybcfmV7oC1s0LkDEPGVS5zuyZE0S0qZo/Xi92tpUgm/HFYTEb8iuKcFtya/c6mHU2wSMLxPYgC6fdV/9C1LSnA1wBx96MhrcQxlWTDjyxSp+9jL/A+pdJWJzdoNDydlxu2ubLixguNva3ETCxyprhp/EuG7WowKAo2HNGVlY0Lm7ci9QghQ9I1P+m+QWQoJldFPEUfWD7b5oPabEqA8Hvy/BlV6FCw== authorized12@51xianqu.net
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAwRt9RDP8XVBmCDv0cornvoe9IURzXgGcQU/ltNPM1wbR6JK1d6z4m+HlV0DIi6uwuA5LfuA0qiSNO+iQC173HQTTdcm3H7/6pgYkgdmdbPruH66ROO5kBAPl9TQwa3gFkwhqyMJ5Ewz9jp3OuC2BZkGh4g6dX/ALK8KwRwxbgh3p95lgLLeDKfRgaRtTLExj78RX6kcNHVVv09DoH8ww15OzRCbPBxRjuD7fIK0qBMLQog5kzwbTJU3F6AC8KLGxxto6ietI33ndFRn49mkfjXEM8TefT1otcTddajDk0g8M+obFR1dyP7Xrov7MTAOtH2WyJTVQM8LzBmciqTUI3Q== authorized13@51xianqu.net
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA1EtU5e1mAj8aDobjlJFZauv1/v7bh4Z32mzomVq5PeMiQqUf57nc8Z9sq/U6xinHaY0q64xI5idtHCtVbbqPTFP/0hNjSxoU3MA0aOe9BDiK2r2wiRl3AyQ/7c8OarY1cNmEvID4RGkkHtjF/ozseFssAXKNP5wuea9f7gnBAHi6m3ytLQ0/3IGpiEY7vxqD9Tu1S3LIz3Qim5TkSFMR+TpSAjSlFi8UjCsOBb3lL7SfXQc/qF809mS5rQv9jXCnyCqhrxTh4AIS0eTkKIRHxTSBXGgtf5hbmxOUDagcfy0AdH+0mhPNER2Ym2gRcPfbvmLZO0OB0+ETlaEAACDtiQ== authorized14@51xianqu.net
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDkJX08+JvjYPt8NervRr6t2Mj4v3/AZiq9yJ3UpNTvZvrs0Z36GvSlIH32Wy2u1l9SZFzRYbQGz+B0POo9H43XOgdE94GDdBLE+FnS2ywLiSHpibH8/hpN5Fu75jxpmCTQCWcsYtNJoJNOk+oVMi/2FKwtUow3S7hmaYeCkLqZWCC5+ajLvCbYAwXL5PpCW6qzXFIW4+rnsxJoCX2DKL2UuOAsyxF+LPcluuGq2Yhyxzi7WQ4/KCYHALHSXOPIPAkxJyhm/7tTV7x0WUxgyoFykRt24yfcqwHxnxpg7Qz7WUPGSEYvMsTQwUZKO9/PWyG+e6IWF/2Xs7OZ/9xSj6X7 admin@manage_key
+EOF
+fi
+
+chown -R ${LOGIN_USER}:`acqGroup` /home/${LOGIN_USER}
+chmod 400 ${file}
+}
+
+function buildSshd_config() {
+# 修改sshd_config文件
+cat << EOF > /etc/ssh/sshd_config
+#Port 22
+Port ${SSH_PORT}
+ServerKeyBits 1024
+SyslogFacility AUTHPRIV
+RSAAuthentication yes
+PubkeyAuthentication yes
+# 存放该用户可以用来登录的 RSA/DSA 公钥。
+# 该指令中可以使用下列根据连接时的实际情况进行展开的符号：
+# %% 表示'%'、%h 表示用户的主目录、%u 表示该用户的用户名。
+# 经过扩展之后的值必须要么是绝对路径，要么是相对于用户主目录的相对路径。
+# 默认值是".ssh/authorized_keys"。
+AuthorizedKeysFile      .ssh/authorized.keys
+# 是否允许 root 登录。可用值如下："yes"(默认) 表示允许。"no"表示禁止。
+PermitRootLogin no
+# 是否允许密码为空的用户远程登录。默认为"no"。
+PermitEmptyPasswords no
+# 是否允许使用基于密码的认证。默认为"yes"。
+PasswordAuthentication no
+# 是否允许质疑-应答(challenge-response)认证。默认值是"yes"。
+# 所有 login.conf(5) 中允许的认证方式都被支持。
+ChallengeResponseAuthentication no
+# 是否允许使用基于 GSSAPI 的用户认证。默认值为"no"。仅用于SSH-2。
+GSSAPIAuthentication yes
+# 是否在用户退出登录后自动销毁用户凭证缓存。默认值是"yes"。仅用于SSH-2。
+GSSAPICleanupCredentials yes
+UsePAM yes
+AcceptEnv LANG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
+AcceptEnv LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT
+AcceptEnv LC_IDENTIFICATION LC_ALL LANGUAGE
+AcceptEnv XMODIFIERS
+X11Forwarding yes
+ClientAliveInterval 300
+ClientAliveCountMax 3
+UseDNS no
+DenyUsers guest
+AllowUsers admin root ${LOGIN_USER} manage
+Subsystem       sftp    /usr/libexec/openssh/sftp-server
+# 默认显示每日提示
+PrintMotd yes
+# 默认显示上次登录信息
+PrintLastLog yes
+EOF
+}
+
+function acqGroup(){
+     echo ${LOGIN_GROUP}
+}
+
+function sshConfig(){
+  groupadd `acqGroup`
+  useradd ${LOGIN_USER} -g `acqGroup`
+  useradd manage -g `acqGroup`
+  local passwd=`acqRandomPassword`
+  echo "password:${passwd}"
+  mkdir -p /data/www/temp
+  echo "user:{LOGIN_USER}   password:${passwd}" > /data/www/temp/passwd.log
+  echo "${passwd}" | passwd --stdin "${LOGIN_USER}"
+   echo "${passwd}" | passwd --stdin manage
+  buildAuthorized_keys "/home/${LOGIN_USER}/.ssh/authorized.keys" ;
+  buildAuthorized_keys "/home/manage/.ssh/authorized.keys" ;
+  buildSshd_config ;
+  sudoersConifg ;
+  service sshd restart
+}
+
+function sudoersConifg(){
+  chmod 775 /etc/sudoers
+  if [ ".${SUDO_PASSWD}" == ".true" ] ; then
+     echo "${LOGIN_USER}    ALL=(ALL)       ALL" >> /etc/sudoers
+     echo "manage    ALL=(ALL)       ALL" >> /etc/sudoers
+  else 
+     echo "${LOGIN_USER}    ALL=(ALL)      NOPASSWD: ALL" >> /etc/sudoers
+     echo "manage    ALL=(ALL)      NOPASSWD: ALL" >> /etc/sudoers 
+  fi
+  sed -i "s/Defaults    requiretty/# Defaults    requiretty/g" /etc/sudoers
+  sed -i 's#Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin$#Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/prometheus/bin:/usr/local/prometheus/bin/system:/usr/local/prometheus/tools:/usr/java/jdk/bin#g' /etc/sudoers
+  chmod 440 /etc/sudoers
+}
+
+
+
+
+#代码开始
+
+# 读取全局配置项
+config ;
+# 检查执行用户是否为root
+checkRoot ;
+
+# 配置ssh
+sshConfig ;
+# 配置欢迎界面
+# welcome ;
+

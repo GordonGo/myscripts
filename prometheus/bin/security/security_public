@@ -1,0 +1,34 @@
+#!/bin/bash
+
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  security public
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+
+# chkconfig:   - 85 15
+function config(){
+  # on service
+  . /etc/profile
+
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  # 加载函数
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi
+
+  # 加载PROMETHEUS配置
+  loadConf prometheus.conf ;
+}
+
+
+
+
+
+config ;
+exit 0 ;

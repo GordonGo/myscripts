@@ -1,0 +1,95 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  install zabbix
+#   AUTHOR: Liang Jian
+#   DATE: 2015 07
+#   QQ:  80327044
+#===============================================================================
+
+function config(){
+  #-------配置项--------------------------
+  . /etc/profile
+  
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  DEBUG=true
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi   
+}
+
+function load_zabbix_res(){
+  # 载入配置
+  test ".${ZABBIX_RES}" = . && ZABBIX_RES="http://res.51xianqu.net/software/PROMETHEUS/etc/zabbix3_res.conf"
+  loadUrlResFile ${ZABBIX_RES} ;
+}
+
+function doInstall(){
+   yum install unixODBC -y ;
+   create_account_zabbix ;
+   doInstall_download ;
+   doInstall_unzip_pkg ;
+   doInstall_service  ;
+   doInstall_zabbix_log ;
+   doInstall_zabbix_conf ;
+}
+
+function create_account_zabbix(){
+  # 创建账户
+  echoPlus 32 "Create account <zabbix:zabbix> ..."
+  groupadd zabbix 2>/dev/null
+  useradd -g zabbix zabbix 2>/dev/null
+}
+
+function doInstall_download(){
+   # 下载资源包
+   if [ ".${ZABBIX_PKG_MD5}" == "." ] || [ ".${ZABBIX_PKG_MD5}" == ".-" ] ; then
+        execWget ${ZABBIX_PKG_DOWNLOAD_URL} ${PROMETHEUS_HOME}/pkg/zabbix/ ;
+   else
+        execWget ${ZABBIX_PKG_DOWNLOAD_URL} ${PROMETHEUS_HOME}/pkg/zabbix/ ${ZABBIX_PKG_MD5} ;  
+   fi
+}
+
+function doInstall_unzip_pkg(){
+  # 解压包
+  local fileName=`basename ${ZABBIX_PKG_DOWNLOAD_URL}`
+  execUnzip ${PROMETHEUS_HOME}/pkg/zabbix/${fileName} /usr/local/zabbix
+}
+
+function doInstall_service(){
+  # 创建服务
+  cd /etc/init.d
+  ln -sf ${PROMETHEUS_HOME}/service/zabbix_agentd .
+  chkconfig zabbix_agentd on
+}
+
+function doInstall_zabbix_log(){
+  mkdir -p /data/www/logs/zabbix
+  chown zabbix.zabbix /data/www/logs/zabbix
+}
+
+function doInstall_zabbix_conf(){
+  local hostName=`hostname`
+  sed -i "s#Server=127.0.0.1#Server=${ZABBIX_PROXY1}#g" /usr/local/zabbix/etc/zabbix_agentd.conf
+  sed -i "s#ServerActive=127.0.0.1#ServerActive=${ZABBIX_PROXY1}#g" /usr/local/zabbix/etc/zabbix_agentd.conf
+  sed -i "s#Hostname=Zabbix server#Hostname=${hostName}#g" /usr/local/zabbix/etc/zabbix_agentd.conf
+
+}
+
+
+
+config ;
+service zabbix_agentd stop ;
+#doParam $@ ;
+load_zabbix_res
+doInstall ;
+service zabbix_agentd start ;
+
+

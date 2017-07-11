@@ -1,0 +1,150 @@
+#! /bin/sh
+# chkconfig: 2345 55 25
+# Description: Startup script for nginx webserver on Debian. Place in /etc/init.d and
+# run 'update-rc.d -f nginx defaults', or use the appropriate command on your
+# distro. For CentOS/Redhat run: 'chkconfig --add nginx'
+
+### BEGIN INIT INFO
+# Provides:          nginx
+# Required-Start:    $all
+# Required-Stop:     $all
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: starts the nginx web server
+# Description:       starts nginx using start-stop-daemon
+### END INIT INFO
+
+# Author:   ezhttp
+# website:  http://lnmp.org
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+DESC="nginx daemon"
+OLD_PID=
+
+if [ -d /usr/local/openresty/nginx ] ; then
+   nginx_location=/usr/local/openresty/nginx
+fi
+if [ -d /usr/local/nginx ] ; then
+   nginx_location=/usr/local/nginx
+fi
+
+DAEMON=$nginx_location/sbin/nginx
+CONFIGFILE=$nginx_location/conf/nginx.conf
+PIDFILE=/data/www/logs/nginx/nginx.pid
+SCRIPTNAME=/etc/init.d/nginx
+set -e
+[ -x "$DAEMON" ] || exit 0
+
+
+function print_nginx_master_pid(){
+  # 打印pid
+  local newPid=$1
+  test ".${OLD_PID}" = . && OLD_PID='-'
+  echo "----------------------------------------------------------------"
+  #printf "\e[32m%-30s %-25s %-10s\e[0m \n" NginxOldPid NginxNewPid Check
+  printf "%-30s %-25s %-10s \n" NginxOldPid NginxNewPid Check
+  echo "----------------------------------------------------------------"
+  if [ "${oldPid}" != "${newPid}" ]; then
+     #printf "\e[34m%-30s\e[0m %-25s \e[32m%-10s\e[0m\n" ${OLD_PID} ${newPid} OK
+     printf "%-30s %-25s %-10s \n" ${OLD_PID} ${newPid} OK
+  else
+     #printf "\e[34m%-30s\e[0m %-25s \e[31m%-10s\e[0m\n" ${OLD_PID} ${newPid} Failure
+     printf "%-30s %-25s %-10s \n" ${OLD_PID} ${newPid} Failure
+  fi
+  echo "----------------------------------------------------------------"
+}
+
+acqNginxPid(){
+  local pid psfind_pid
+  #if [ -f $PIDFILE ] ; then
+  	 #pid=`cat $PIDFILE`
+  psfind_pid=`ps -ef|grep "nginx: master process" | grep -v grep | awk '{print $2}'`
+  echo ${psfind_pid}
+  #fi 	 
+}
+
+do_start() {
+ local pid=`acqNginxPid`
+ if [ ".${pid}" == "." ] ; then
+    $DAEMON -c $CONFIGFILE 
+ else
+    echo -n "nginx already running"
+ fi
+}
+
+do_stop() {
+ OLD_PID=`acqNginxPid`
+ if [ ".${OLD_PID}" != "." ] ; then
+    kill -INT ${OLD_PID}
+ else
+    echo -n "nginx not running"
+ fi
+}
+
+do_reload() {
+ local pid=`acqNginxPid`
+ local newPid
+ do_check ;
+ if [ ".${pid}" != "." ] ; then
+    kill -HUP ${pid}
+ else
+    echo -n "nginx can't reload"
+ fi
+}
+
+do_cut(){
+ local pid=`acqNginxPid`
+ do_check ;
+ if [ ".${pid}" != "." ] ; then
+    kill -USR1 ${pid}
+ else
+    echo -n "nginx can't cut"
+ fi
+
+}
+
+do_check(){
+  local check=`$DAEMON -t 2>&1 | grep -c 'test failed'`
+  if [ ".${check}" != ".0" ] ; then 
+     echo 'nginx configuration file test failed'
+     exit 1
+  fi
+}
+
+case "$1" in
+ start)
+   echo -n "Starting $DESC: $NAME"
+   do_start
+   echo "."
+   ;;
+ stop)
+   echo -n "Stopping $DESC: $NAME"
+   do_stop
+   echo "."
+   ;;
+ reload|graceful)
+   echo -n "Reloading $DESC configuration..."
+   do_reload
+   echo "."
+   #print_nginx_master_pid ${pid} `acqNginxPid` ;
+   ;;
+ restart)
+   echo -n "Restarting $DESC: $NAME"
+   do_stop
+   do_start
+   echo "."
+   print_nginx_master_pid ${pid} `acqNginxPid` ;
+   ;;
+ cut)
+   echo -n "Cuting $DESC: $NAME"
+   do_cut
+   echo "."
+   ;;
+ *)
+   echo "Usage: $SCRIPTNAME {start|stop|reload|restart|cut}" >&2
+   exit 3
+   ;;
+esac
+
+exit 0
+

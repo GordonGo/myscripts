@@ -1,0 +1,97 @@
+#!/bin/bash
+
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  tomcat service manager
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+
+# chkconfig:   - 85 15
+
+# acqRandomPassword
+
+function config(){
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi
+
+  FTP_HOST='file.51xianqu.net'
+  FTP_PORT='21'
+  FTP_USER='xqftp'
+  FTP_PASSWD='998ecf84'
+
+  ZIP_PASSWORD=`acqRandomPassword`
+  ZIP_FILENAME="`acqRandomPassword`.zip"
+
+  # 初始化安装ftp命令
+  installationComponent ftp ftp
+}
+
+function doParam(){
+  # 检查参数是否合法
+  if [ $# != 1 ] ; then
+     exit 0 ;
+  fi
+}
+
+function do_upload(){
+  local file=$1
+  if [[ -f ${file} ]] || [[ -d ${file} ]] ; then
+     zip_file ${file} ;
+     ftp_put /data/www/temp/${ZIP_FILENAME} #&& rm -f ${ZIP_FILENAME}
+     echoPlus 33 "Download url :    https://file.51xianqu.net/temp/${ZIP_FILENAME}"
+     echoPlus 33 "                  http://file.51xianqu.net/temp/${ZIP_FILENAME}"
+     echoPlus 33 "阿里云机器内网下载 : http://10.51.35.20/temp/${ZIP_FILENAME}"
+     echoPlus 31 "Unzip passwd    : ${ZIP_PASSWORD}"
+     echoPlus 33 "linux download  : wget --no-check-certificate https://file.51xianqu.net/temp/${ZIP_FILENAME}"
+  else
+     echoPlus error "${file} not found !"
+  fi
+}
+
+function ftp_put(){
+  # ftp put
+  # @param file
+  local file=$1
+  local fileName=`basename ${file}`
+  #local filePath=`dirname ${file}`
+  cd /data/www/temp
+ftp -v -n ${FTP_HOST} ${FTP_PORT} <<EOF  >/dev/null 2>&1
+user ${FTP_USER} ${FTP_PASSWD}
+cd temp
+binary
+hash
+prompt
+put ${fileName} ${fileName}
+bye
+EOF
+  checkError "${file} transmission failure!" ;
+}
+
+function zip_file(){
+  local path=$1
+  echo "zip_file ${path}"
+  [ -d /data/www/temp ] || mkdir -p /data/www/temp
+  if [ -f ${path} ] ; then 
+     zip -P ${ZIP_PASSWORD} /data/www/temp/${ZIP_FILENAME} ${path}
+  fi
+  if [ -d ${path} ] ; then 
+     zip -P ${ZIP_PASSWORD} -rq /data/www/temp/${ZIP_FILENAME} ${path}
+  fi
+  zip -P ${ZIP_PASSWORD} /data/www/temp/${ZIP_FILENAME} ${path}
+  checkError "zip file ${path} failure!" ;
+}
+
+config ;
+checkRoot ;
+doParam $@ ;
+do_upload $1 ;
+exit 0 ;

@@ -1,0 +1,106 @@
+#!/bin/bash
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
+export PATH
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  Prometheus
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+
+function version(){
+    #全局版本信息
+    echo 'Prometheus 3.0 by LiangJian'
+}
+
+#function funcs_init(){
+#  . /etc/profile
+#  if [ ".${PROMETHEUS_HOME}" == "." ] ; then
+#     PROMETHEUS_HOME='/usr/local/prometheus'
+#     export PROMETHEUS_HOME
+#  fi
+#}
+
+function loadFunc(){
+  # 加载函数
+  local funcName=$1
+  if [ -f ${funcName} ] ; then
+     . ${funcName}
+     return ;
+  fi   
+  local funcPath=${PROMETHEUS_HOME}/funcs/${funcName}
+  if [ -r ${funcsPath} ] ; then
+     . ${funcPath}
+  else
+     echoPlus error "funcs ${funcPath} not found" ;
+     exit 1 ;
+  fi  
+}
+
+function loadConf(){
+  # 加载配置
+  test $# == 0 && return ; 
+  local confName
+  IFS=$' \t\n'
+  for confName in $@ ; do
+      if [ -r "${PROMETHEUS_HOME}/etc/${confName}" ]; then
+         . ${PROMETHEUS_HOME}/etc/${confName}
+      else
+         echoPlus error "${PROMETHEUS_HOME}/etc/${confName} not found"
+         exit 1 ;
+      fi
+  done    
+}
+
+function doLoadFuncs(){
+  # 加载函数
+  for funcName in `ls ${PROMETHEUS_HOME}/funcs/funcs_*` ; do
+      loadFunc ${funcName} ;
+  done
+}
+
+function echoPlus(){
+  # 增强显示
+  # @param color  (31|91 红  32|92绿  33|93黄 34|94蓝 35|95紫 36|96天蓝)
+  # @param content
+  local colorCode=$1
+  local content=$2
+  case ${colorCode} in
+    31|91|error|err)
+            colorCode=31
+            debug [ERROR] ${content} ;;
+    32|92|info)
+            colorCode=32 
+            debug [INFO] ${content} ;; 
+  esac
+  IFS=$'\t\n'
+  #test  ".`pwd`" = "./home/xqadmin" && echo "${content}" && return
+  echo -e "\e[${colorCode}m${content}\e[0m"
+}
+
+function debug(){
+  # 调试用写入debug日志
+  local logLevel=$1
+  local logTime=$(date +%Y-%m-%d\ %T)
+  [ ".${DEBUG_FILE}" == "." ] && return ;
+  mkdir -p `dirname ${DEBUG_FILE}` ;
+  if [ ".${DEBUG}" == ".true" ]; then
+     echo "${logTime} $@" >> ${DEBUG_FILE}
+  fi
+}
+
+function check_funcs_tomcat(){
+  # 版本兼容，部分没有的环境变量将有默认值
+  test "${TOMCAT_INSTALL_PATH}" == "." && TOMCAT_INSTALL_PATH=/usr/local
+}
+
+# 校验
+check_funcs_tomcat ;
+
+#funcs_init ;
+doLoadFuncs ;
+# version ;
+
+
+  
+  

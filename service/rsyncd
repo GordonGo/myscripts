@@ -1,0 +1,93 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:          rsync
+# Required-Start:    $all
+# Required-Stop:     $all
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: starts the rsync
+# Description:       starts rsync using start-stop-daemon
+### END INIT INFO
+
+# Author:   jog
+# website:  null
+#PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
+#export PATH
+   
+SDATH="/usr/local/rsync"
+SSTART='./bin/rsync --daemon  --config='${SDATH}/rsyncd.conf
+SPID=`ps -ef|grep 'rsync'|grep -v 'grep'|grep -v 'rsyncd' |awk '{print $2}'`
+
+function_start()
+{
+    echo -en "\033[32;49;1mStarting rsync......\n"
+    echo -en "\033[39;49;0m"
+    if [ -t ${SPID} ]; then
+        cd ${SDATH}
+        ${SSTART} > /dev/null 2>&1
+        printf "rsync is the successful start!\n"
+    else
+    printf "rsync is runing!\n"
+    exit 1
+    fi
+}
+   
+function_stop()
+{
+    echo -en "\033[32;49;1mStoping rsync......\n"
+    echo -en "\033[39;49;0m"
+    if  [ -t ${SPID} ]; then
+        printf  "rsync program is not runing!\n"
+    else
+        kill ${SPID}
+        printf "rsync program is stoped\n"
+    fi
+}
+
+function_restart()
+{
+    echo -en "\033[32;49;1mRestart rsync......\n"
+    echo -en "\033[39;49;0m"
+    if  [ -t ${SPID} ]; then
+        cd ${SDATH}
+        ${SSTART} > /dev/null 2>&1
+    else
+        kill ${SPID}
+        sleep 1
+        cd ${SDATH}
+        ${SSTART} > /dev/null 2>&1
+    fi
+    printf "rsync is the successful restart!\n"
+}
+   
+function_kill()
+{
+    killall rsync
+}
+   
+function_status()
+{
+    if ! ps -ef|grep 'rsync'|grep -v 'grep' > /dev/null 2>&1
+    then
+        printf "rsync is down!!!\n"
+    else
+        printf "rsync is running now!\n"
+    fi
+}
+
+   
+if [ "$1" = "start" ]; then
+    function_start
+elif [ "$1" = "stop" ]; then
+    function_stop
+elif [ "$1" = "restart" ]; then
+    function_restart
+elif [ "$1" = "kill" ]; then
+    function_kill
+elif [ "$1" = "status" ]; then
+    function_status
+else
+    echo -en "\033[32;49;1m Usage: rsync {start|stop|restart|kill|status}\n"
+    echo -en "\033[39;49;0m"
+fi
+

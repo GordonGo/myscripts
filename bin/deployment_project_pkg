@@ -1,0 +1,170 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  deployment project
+#   AUTHOR: Liang Jian
+#   DATE: 2014-10-10
+#   QQ:  80327044
+#===============================================================================
+#   支持参数化安装
+#   by 2.1.0版本  2015-04-22
+#===============================================================================
+#   命令模式部署
+
+#   -project.name=name                                                          No default
+#   -project.deployment.pkg.path=/data/www/update/20150404-093050/admin.war     No default
+#   -project.deployment.pkg.download.url=http://res.swomc.net/admin.war         No default
+#   -project.deployment.pkg.local.path=/data/www/update/default                 default=/data/www/update/default                       
+
+#   deployment_project_pkg -project.name=analyzer-backend -project.deployment.pkg.download.url=http://res.51xianqu.net/deploy/analyzer-backend/daily/pkg/analyzer-backend.zip
+
+
+
+function config(){
+  #-------配置项--------------------------
+  DEBUG_FILE_NAME=$(basename $0).log
+
+
+  PROJECT_NAME=
+
+  PROJECT_DEPLOYMENT_PKG_PATH=
+
+  PROJECT_DEPLOYMENT_PKG_DOWNLOAD_URL=
+
+  PROJECT_DEPLOYMENT_PKG_LOCAL_PATH='/data/www/update/default'
+
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi      
+
+  SERVER_INTERNAL_IP=`acqInternalIp`
+
+  # 加载PROMETHEUS配置
+  loadConf prometheus.conf ;
+
+  # 加载TOMCAT配置
+  # loadConf tomcat_setenv.conf ;
+}
+
+function doParam(){
+  # 处理参数
+  local param=
+  [ $# == 0 ] && return ;
+  for param in "$@" ; do
+      local paramName=`echo ${param} | awk -F'=' '{print $1}'`
+      local paramValue=`echo ${param} | awk -F'=' '{print $NF}'`
+      case "${paramName}" in
+          -project.name)
+              PROJECT_NAME=${paramValue} ;;
+          -project.deployment.pkg.path)
+              PROJECT_DEPLOYMENT_PKG_PATH=${paramValue} ;;
+          -project.deployment.pkg.download.url)
+              PROJECT_DEPLOYMENT_PKG_DOWNLOAD_URL=${paramValue} ;;
+          -project.deployment.pkg.local.path)
+              PROJECT_DEPLOYMENT_PKG_LOCAL_PATH=${paramValue} ;;
+          -h|-help)
+              prometheus_help $(basename $0) 
+              exit 0 ;;    
+      esac
+  done
+}
+
+function doCheck(){
+  # 校验tomcat app名称
+  if [ ".${PROJECT_NAME}" == "." ] ; then
+     echoPlus 31 "deployment project name not found" ;
+     exit 1 ;
+  fi 
+  
+  # 检查升级文件是否存在
+  doCheck_pkg ;
+}
+
+function doCheck_pkg(){
+  # 检查升级文件是否存在
+  # local updateFile=`acqUpdateFile ${tomcatAppName} ${updatePath} ${updateType}`
+  if [ ".${PROJECT_DEPLOYMENT_PKG_PATH}" == "." ] || [ ! -f "${PROJECT_DEPLOYMENT_PKG_PATH}" ] ; then
+     if [ ".${PROJECT_DEPLOYMENT_PKG_DOWNLOAD_URL}" == "." ] ; then
+        echoPlus 31 "${PROJECT_DEPLOYMENT_PKG_PATH} package not found" ;
+        deploy_failure ;
+     else
+        execWget ${PROJECT_DEPLOYMENT_PKG_DOWNLOAD_URL} ${PROJECT_DEPLOYMENT_PKG_LOCAL_PATH}/ ;
+        PROJECT_DEPLOYMENT_PKG_PATH="${PROJECT_DEPLOYMENT_PKG_LOCAL_PATH}/`basename ${PROJECT_DEPLOYMENT_PKG_DOWNLOAD_URL}`"
+     fi
+  fi
+
+  # 检查升级包是否完整
+  if [ "`unzip -T ${PROJECT_DEPLOYMENT_PKG_PATH} | grep -c "Updated time stamp for"`" = "1" ] ; then
+     # 升级包正常
+     echoPlus 32 "${PROJECT_DEPLOYMENT_PKG_PATH} package check ok" ;
+  else
+     # 升级包破损
+     echoPlus 31 "${PROJECT_DEPLOYMENT_PKG_PATH} package is damaged" ;
+     deploy_failure ;
+  fi
+}
+
+function projectService(){
+  # 服务控制
+  # @param action       (stop)
+  # echo -e $1 "service $2 [" "\e[31;5mOK\e[0m" "]"
+  local action=$1
+  [ -x /data/www/JAR/${PROJECT_NAME}/service.sh ] || chmod +x /data/www/JAR/${PROJECT_NAME}/service.sh
+  checkService ;
+  echoPlus info "/data/www/JAR/${PROJECT_NAME}/service.sh ${action}" ;
+  #/sbin/service ${PROJECT_NAME} ${action} > /data/www/temp/${PROJECT_NAME}.out 2>&1 &
+  case "${action}" in
+       start)
+          /usr/bin/nohup /data/www/JAR/${PROJECT_NAME}/service.sh ${action} > /data/www/temp/${PROJECT_NAME}.out 2>&1 &
+          checkError "Deploy Failure : project=${PROJECT_NAME} ip=${SERVER_INTERNAL_IP} service start error" ;;
+       stop)
+          /data/www/JAR/${PROJECT_NAME}/service.sh ${action}
+          checkError "Deploy Failure : project=${PROJECT_NAME} ip=${SERVER_INTERNAL_IP} service stop error" ;;
+  esac
+}
+
+
+function checkService(){
+  [ -f /etc/init.d/${PROJECT_NAME} ] && return ;
+  cd /etc/init.d
+  ln -s /data/www/JAR/${PROJECT_NAME}/service.sh ${PROJECT_NAME}
+  chkconfig ${PROJECT_NAME} on
+}
+
+function doUpdate(){
+  # 升级
+  echoPlus info "${PROJECT_NAME} Upgrade start" ;
+  # 停止服务
+  projectService stop ;
+  execRmDir "/data/www/JAR/${PROJECT_NAME}" ;
+  # 升级
+  echoPlus info "Unziping.... ${updateFile}" ;
+  mkdir -p "/data/www/JAR/${PROJECT_NAME}" ;
+  unzip "${PROJECT_DEPLOYMENT_PKG_PATH}" -d "/data/www/JAR/${PROJECT_NAME}" 
+  #>/dev/null 2>&1
+  #execCp "/data/www/update/update-tmp/${appWebPath}" "/data/www/ROOT/${appName}/" ;
+  echoPlus info "${PROJECT_NAME} Upgrade is complete" ;
+  #启动服务
+  projectService start ;
+
+}
+
+function deploy_failure(){
+  echoPlus error "Deploy Failure : project=${PROJECT_NAME} ip=${SERVER_INTERNAL_IP}"
+  exit 1
+}
+
+config ;
+doParam $@ ;
+doCheck ;
+doUpdate ;
+echoPlus info "Deploy Success : project=${PROJECT_NAME} ip=${SERVER_INTERNAL_IP}"
+exit 0
+
+

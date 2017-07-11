@@ -1,0 +1,161 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  uninstall tomcat
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+#   编码规范
+#   全局变量使用大写字符，局部变量使用小写字符
+#   所有函数都带说明
+#   by 2.1版本  2014-10-22
+#===============================================================================
+#   支持参数化安装
+#   by 2.1.0版本  2015-04-22
+#===============================================================================
+#   命令模式安装
+#   -tomcat.uninstall.name=all                 No default   
+#   -del.tomcat.logs=true                      default=false
+#   -del.tomcat.root=true                      default=false
+#   -del.tomcat.conf=true                      default=false
+#   -tomcat.install.path='/usr/local'          default=${TOMCAT_INSTALL_PATH}
+#   -init                                      uninstall all tomcat
+#   ./uninstall_tomcat -tomcat.uninstall.name=all -del.tomcat.logs=true -del.tomcat.root=true -del.tomcat.conf=true
+#===============================================================================
+
+function config(){
+
+  DEBUG_FILE_NAME=$(basename $0).log
+  
+  TOMCAT_UNINSTALL_NAME=
+
+  DEL_TOMCAT_LOGS=false
+  DEL_TOMCAT_ROOT=false
+  DEL_TOMCAT_CONF=false
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi      
+
+  # 加载PROMETHEUS配置
+  loadConf prometheus.conf ;
+
+  # 加载TOMCAT配置
+  loadConf tomcat_setenv.conf ;
+}
+
+function doParam(){
+  # 处理参数
+  local param=
+  [ $# == 0 ] && return ;
+  for param in "$@" ; do
+      local paramName=`echo ${param} | awk -F'=' '{print $1}'`
+      local paramValue=`echo ${param} | awk -F'=' '{print $NF}'`
+      case "${paramName}" in
+          -tomcat.uninstall.name)
+              TOMCAT_UNINSTALL_NAME=${paramValue} ;;
+          -del.tomcat.logs)
+              DEL_TOMCAT_LOGS=${paramValue} ;;    
+          -del.tomcat.root)
+              DEL_TOMCAT_ROOT=${paramValue} ;;  
+          -del.tomcat.conf)
+              DEL_TOMCAT_CONF=${paramValue} ;;
+          -tomcat.install.path)
+              TOMCAT_INSTALL_PATH=${paramValue} ;;
+          -init|init)
+              # 初始化tomcat环境
+              uninstall_tomcat_init ;;
+          -h|-help)
+              prometheus_help $(basename $0) 
+              exit 0 ;;
+      esac
+  done
+}
+
+function uninstall_tomcat_init(){
+  tomcatServiceControlAll killall;
+  rm -rf /usr/local/tomcat*-*-*
+  rm -rf /data/www/ROOT/*
+  rm -rf /data/www/logs/apps/*
+  rm -rf /data/www/conf/apps/*
+  rm -rf /data/www/conf/server-*-*.xml
+  rm -rf /data/www/conf/tomcat-users-*-*.xml
+  rm -rf /data/www/conf/.setenv-*-*.sh
+  rm -rf /data/www/install/tomcat*-*-*
+  exit 1;
+}
+
+function selectTomcatAppName(){
+  # 选择tomcat
+  if [ ".${TOMCAT_UNINSTALL_NAME}" == "." ] ; then
+     echoAllTomcatAppName ;
+     local tomcatMaxCnt=$(( ${#TOMCAT_APP_NAME_OPT[@]} - 1 ))
+     echoPlus 31 "input <all> setup all tomcat"
+     # 使read能支持回格删除
+     stty erase "^H"
+     local quick
+     read -p "please select: " quick
+     case "$quick" in
+       all|ALL)
+             uninstallTomcat_ all ;
+         ;;
+       *) 
+         if [ "${quick}" -ge "0" ] && [ "${quick}" -le "${tomcatMaxCnt}" ] ; then
+            uninstallTomcat ${quick} ;
+         else
+            echoPlus 31 "The wrong choice, exit the program!" ;
+            exit 1
+         fi
+         ;;
+     esac
+  else
+     local tomcatAppName
+     IFS=$'\:'
+     for tomcatAppName in "${TOMCAT_UNINSTALL_NAME}" ; do
+         uninstallTomcat_ ${tomcatAppName} ;
+     done
+  fi
+}
+
+function uninstallTomcat(){
+  # 安装tomcat
+  # @param index
+  local index=$1
+  local tomcatAppName=${TOMCAT_APP_NAME_OPT[$index]}
+  uninstallTomcat_ ${tomcatAppName} ;
+}
+
+function uninstallTomcat_(){
+  # 卸载tomcat
+  local tomcatAppName=$1
+  if [ ".${tomcatAppName}" == ".all" ] ; then
+     for tomcatAppName in ${TOMCAT_APP_NAME_OPT[*]} ; do
+         uninstallTomcat_ ${tomcatAppName} ;
+     done
+     return ;
+  fi
+  # tomcatAppName=`acqTomcatAppNameExclusiveDisable ${tomcatAppName}`
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  #local tomcatName=`acqTomcatName ${tomcatAppName}`
+  #local tomcatAppPath=/usr/local/${tomcatName}-${tomcatHttpPort}-${tomcatAppName}
+  # 输出安装信息
+  echoPlus 95 "uninstall tomcat for ${tomcatHttpPort}-${tomcatAppName} ..."
+  # 清理历史数据
+  ${PROMETHEUS_HOME}/bin/tomcat ${tomcatAppName} kill ;
+  delTomcatInstllFile ${tomcatAppName} ;
+  echoPlus 92 "${tomcatHttpPort}-${tomcatAppName} uninstall is complete ..." ;
+}
+
+
+#=========================================================================
+# 初始化
+config ;
+doParam $@ ;
+selectTomcatAppName ;
+
+exit 0 ;

@@ -1,0 +1,212 @@
+# Firewall configuration written by system-config-firewall
+# Manual customization of this file is not recommended.
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+-A INPUT -p icmp -j ACCEPT
+-A INPUT -i lo -j ACCEPT
+
+-A INPUT -s 10.0.0.0/8 -j ACCEPT
+-A INPUT -s 127.0.0.0/8 -j ACCEPT
+-A INPUT -s 115.236.161.16/28 -j ACCEPT
+-A INPUT -s 124.160.28.144/29 -j ACCEPT
+
+# sshd
+-I INPUT -p tcp --dport 22 -j DROP
+-I INPUT -s 115.236.161.16/28 -p tcp --dport 22 -j ACCEPT
+-I INPUT -s 124.160.28.144/29 -p tcp --dport 22 -j ACCEPT
+-I INPUT -s 10.0.0.0/8 -p tcp --dport 22 -j ACCEPT
+
+
+-I INPUT -s 10.0.0.0/8 -p tcp -m multiport --dports 2888 -j ACCEPT
+-I INPUT -s 10.0.0.0/8 -p tcp -m multiport --dports 3888 -j ACCEPT
+
+
+# zabbix_agentd
+-I INPUT -p tcp --dport 10050 -j DROP
+-I INPUT -s 10.0.0.0/8 -p tcp --dport 10050 -j ACCEPT
+
+
+# dubbo
+-I INPUT -p tcp --dport 2181 -j DROP
+-I INPUT -s 127.0.0.0/8 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  api-production	
+-I INPUT -s 10.251.234.225 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  api-production	
+-I INPUT -s 10.252.119.214 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  auc-production	
+-I INPUT -s 10.161.221.131 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  auc-production	
+-I INPUT -s 10.252.83.126 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  bi-production	
+-I INPUT -s 10.160.13.72 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  bkb-production	
+-I INPUT -s 10.51.9.88 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  centralbank-production	
+-I INPUT -s 10.162.100.89 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  centralbank-production	
+-I INPUT -s 10.251.247.55 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  centralbank-task-production	
+-I INPUT -s 10.162.99.20 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  crm-production	
+-I INPUT -s 10.162.77.55 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  crm-production	
+-I INPUT -s 10.252.163.83 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  dataapi-production	
+-I INPUT -s 10.173.139.224 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  dataapi-production	
+-I INPUT -s 10.173.141.7 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  delivery-production	
+-I INPUT -s 10.251.251.137 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  delivery-production	
+-I INPUT -s 10.252.120.112 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  delivery-production	
+-I INPUT -s 10.252.144.3 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  dubbo-production	
+-I INPUT -s 10.117.39.136 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  dubbo-production	
+-I INPUT -s 10.168.219.185 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  dubbo-production	
+-I INPUT -s 10.168.143.49 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  dubbo-production	
+-I INPUT -s 10.252.90.247 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  iris-api-production	
+-I INPUT -s 10.117.60.161 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  iris-api-production	
+-I INPUT -s 10.132.9.58 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  item-center-production	
+-I INPUT -s 10.168.125.73 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  item-center-production	
+-I INPUT -s 10.168.138.68 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  item-center-production	
+-I INPUT -s 10.168.4.35 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  jobcenter-production	
+-I INPUT -s 10.168.45.4 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  landmarkbi-production	
+-I INPUT -s 10.252.151.235 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  logistics-production	
+-I INPUT -s 10.168.90.38 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  logistics-production	
+-I INPUT -s 10.252.162.69 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  logistics-production	
+-I INPUT -s 10.117.179.184 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  logistics-production	
+-I INPUT -s 10.132.0.211 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  logistics-production	
+-I INPUT -s 10.165.33.248 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  logistics-production	
+-I INPUT -s 10.168.84.156 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  market-production	
+-I INPUT -s 10.168.76.95 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  market-production	
+-I INPUT -s 10.175.205.86 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  market-production	
+-I INPUT -s 10.168.138.28 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  market-production	
+-I INPUT -s 10.168.28.178 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  market-production	
+-I INPUT -s 10.117.34.213 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  member-production	
+-I INPUT -s 10.251.236.71 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  member-production	
+-I INPUT -s 10.117.42.91 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  msg-center-production	
+-I INPUT -s 10.171.238.8 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  msg-center-production	
+-I INPUT -s 10.117.43.240 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  org-production	
+-I INPUT -s 10.117.61.214 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  org-production	
+-I INPUT -s 10.117.61.216 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  pay-production	
+-I INPUT -s 10.168.106.214 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  pay-production	
+-I INPUT -s 10.168.96.105 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  pay-production	
+-I INPUT -s 10.117.15.203 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  pay-production	
+-I INPUT -s 10.117.60.170 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  pay-production	
+-I INPUT -s 10.168.106.213 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  pay-production	
+-I INPUT -s 10.117.15.201 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  procurement-production	
+-I INPUT -s 10.162.78.138 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  procurement-X	
+-I INPUT -s 10.252.100.98 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  rate-production	
+-I INPUT -s 10.117.200.214 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  rate-production	
+-I INPUT -s 10.117.17.25 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  sdw-production	
+-I INPUT -s 10.117.208.58 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  sdw-production	
+-I INPUT -s 10.117.50.198 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  shop-production	
+-I INPUT -s 10.160.85.149 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  shop-production	
+-I INPUT -s 10.252.95.95 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  shop-production	
+-I INPUT -s 10.160.4.28 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  shopback-production	
+-I INPUT -s 10.168.114.228 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  shopback-production	
+-I INPUT -s 10.173.136.60 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  timeoutcenter-production	
+-I INPUT -s 10.174.176.110 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  timeoutcenter-production	
+-I INPUT -s 10.51.28.167 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  tracker-production	
+-I INPUT -s 10.162.97.122 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  trade-production	
+-I INPUT -s 10.168.57.209 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  trade-production	
+-I INPUT -s 10.252.251.186 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  trade-production	
+-I INPUT -s 10.252.94.232 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  trade-production	
+-I INPUT -s 10.168.122.58 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  warninglog-production	
+-I INPUT -s 10.117.60.246 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  warninglog-production	
+-I INPUT -s 10.51.12.2 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  stockcenter-production
+-I INPUT -s 10.252.113.2 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  stockcenter-production
+-I INPUT -s 10.47.65.193 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  market-tool-production
+-I INPUT -s 10.117.67.81 -p tcp -m multiport --dports 2181 -j ACCEPT
+#  market-tool-production
+-I INPUT -s 10.117.187.249 -p tcp -m multiport --dports 2181 -j ACCEPT
+# userblack-production
+-I INPUT -s 10.251.235.144 -p tcp -m multiport --dports 2181 -j ACCEPT
+# wms-production
+-I INPUT -s 10.117.206.167 -p tcp -m multiport --dports 2181 -j ACCEPT
+# wms-production
+-I INPUT -s 10.132.18.103 -p tcp -m multiport --dports 2181 -j ACCEPT
+# wmsOrderCenter-production
+-I INPUT -s 10.117.58.205 -p tcp -m multiport --dports 2181 -j ACCEPT
+# wmsOrderCenter-production
+-I INPUT -s 10.132.53.202 -p tcp -m multiport --dports 2181 -j ACCEPT
+# search-dumpcenter-1
+-I INPUT -s 10.132.53.80 -p tcp -m multiport --dports 2181 -j ACCEPT
+# search-dumpcenter-2
+-I INPUT -s 10.168.18.190 -p tcp -m multiport --dports 2181 -j ACCEPT
+# search-service-1
+-I INPUT -s 10.132.81.92 -p tcp -m multiport --dports 2181 -j ACCEPT
+# search-service-2
+-I INPUT -s 10.117.207.180 -p tcp -m multiport --dports 2181 -j ACCEPT
+# shorturl-produciton
+-I INPUT -s 10.132.24.66 -p tcp -m multiport --dports 2181 -j ACCEPT
+# logisticscentral-1
+-I INPUT -s 10.132.81.92 -p tcp -m multiport --dports 2181 -j ACCEPT
+# logisticscentral-2
+-I INPUT -s 10.117.207.180 -p tcp -m multiport --dports 2181 -j ACCEPT
+
+-A INPUT -j REJECT --reject-with icmp-host-prohibited
+-A FORWARD -j REJECT --reject-with icmp-host-prohibited
+COMMIT
+
+

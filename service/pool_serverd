@@ -1,0 +1,64 @@
+#! /bin/bash
+#   
+# Service X Daemon 
+#   
+# chkconfig:    - 90 25  
+# description:  Service X Daemon   
+
+
+SERVICE_NAME='pool_serverd'
+RUN_NAME='pool_mysql'
+
+SERVICE_START_CMD='/usr/local/prometheus/service/pool_server'
+SERVICE_STOP_CMD='/usr/local/prometheus/service/pool_server'
+
+acqPid() {
+    local pid=`ps -ef |grep ${RUN_NAME}|grep -v grep |grep -v ${SERVICE_NAME}`
+    test ".${pid}" != . && awk '{print $2}' <<< ${pid}
+}
+
+start () {
+    echo -n $"Starting ${SERVICE_NAME}: "
+    if [ ".`acqPid`" == "." ] ; then
+       ${SERVICE_START_CMD} start
+    fi
+    echo
+}
+
+stop () {
+    echo -n $"Stopping ${SERVICE_NAME}: "
+    if [ ".`acqPid`" == "." ] ; then
+       echo "${SERVICE_NAME} not running!"
+       exit 1 ;
+    fi
+    ${SERVICE_STOP_CMD} stop
+    RETVAL=$?
+    if [ $RETVAL != 0 ] ; then
+       kill -9 `acqPid`
+    fi
+    echo 
+}
+
+restart () {
+    stop
+    start
+}
+
+
+# See how we were called.
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart|reload)
+        restart
+        ;;
+    *)
+    echo $"Usage: $0 {start|stop|status|restart|reload}"
+    exit 1
+esac
+
+exit $?

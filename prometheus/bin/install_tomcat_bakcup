@@ -1,0 +1,660 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  install tomcat
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+#   命令模式安装
+
+#   配置文件路径
+#   -tomcat.setenv.file=http://res.omc.net/tomcat_setenv.conf  default=tomcat_setenv.conf
+
+#   安装完成后是否运行tomcat实例
+#   -tomcat.service.start=true                 default=false
+
+#   必要参数,若没有则进入交互模式安装
+#   8021 安装特定版本的tomcat
+#   6|7|8|X 安装X分支的最新版本
+#   update 升级到当前分支最新版本
+#   -tomcat.install.version=8021               No default  
+
+#   安装probe版本，只能精确匹配版本号
+#   -probe.install.version=233                 default=notInstall
+#   定义probe的登录帐号和密码
+#   -probe.userpasswd=admin:123456             default=admin:randompasswd
+
+#   是否安装tomcat自带的manager,默认不安装，本人不建议在生产环境安装
+#   -tomcat.manager=true|false                 default=false
+
+#   伪装版本号默认为sws
+#   -tomcat.display.version='sws'              default='sws'
+
+#   安装的tomcat实例名字多个用:分割，如果全部安装则输入all
+#   必要参数
+#   -tomcat.install.name=name1:name2           No default
+
+#   自定义安装路径，此参数使用后需要修改tomcat_setenv.conf中的TOMCAT_INSTALL_PATH设置
+#   -tomcat.install.path='/usr/local'          default='/usr/local'
+
+#   设定安装的tomcat http端口编码
+#   -tomcat.http.uri.encoding='utf8'           default='utf8'  |  当值为null则不强制
+
+#   设定本地下载路径
+#   -pkg.download.path='./pkg'                 default='${PROMETHEUS_HOME}/pkg/'
+
+#   示例
+#   ./install_tomcat -tomcat.install.version=7 -tomcat.install.name=all -tomcat.setenv.file=http://res.51xianqu.net/deploy/trade/tomcat_setenv.conf
+#   ./install_tomcat -tomcat.install.version=7 -probe.install.version=233 -probe.userpasswd=admin:123456 -tomcat.manager=true -tomcat.display.version='Servlet' -tomcat.install.name=all
+# 
+#===============================================================================
+
+function config(){
+
+  # probe登陆账号密码,请自行修改
+  PROBE_USER='admin'
+  # 留空生成随机密码
+  PROBE_PASSWORD=''
+
+  # JVM内存调优
+  # SET_JVM_Xms='128m'
+  # SET_JVM_Xmx='512m'
+  # SET_JVM_Xmn='64m'
+  # SET_JVM_Xss='256k'
+  # SET_JVM_XXPermSize='64m'
+  # SET_JVM_XXMaxPermSize='256m'
+
+  # 全局配置文件下载路径
+  TOMCAT_SETENV_FILE=
+
+  # 安全配置，伪装tomcat版本，留空不伪装
+  TOMCAT_DISPLAY_VERSION='xqs'
+
+  # 是否安装 manager host-manager
+  INSTALL_TOMCAT_MANAGER=false
+
+  TOMCAT_INSTALL_NAME=
+
+  TOMCAT_INSTALL_VERSION=
+
+  # notInstall 代表不安装
+  PROBE_INSTALL_VERSION='notInstall'
+
+  # 安装或升级完tomcat后，是否启动服务
+  TOMCAT_SERVICE_START=false
+
+  # 安装包下载路径
+  # PKG_DOWNLOAD_PATH=
+
+  DEL_TOMCAT_LOGS=false
+
+  DEL_TOMCAT_ROOT=false
+
+  DEL_TOMCAT_CONF=false
+
+  # tomcat用页面的编码去处理post，推荐使用。
+  # useBodyEncodingForURI="true"
+    # TOMCAT_USE_BODY_ENCODING_FOR_URL=false
+  # 强制指定编码了，所以一旦有其他编码的页面存在，就会出问题，如果没有规范制约则不建议用。
+  # 强制编码 URIEncoding="utf-8"
+  TOMCAT_HTTP_URI_ENCODING='utf8'
+
+  # 留空则自动计算
+  SET_JVM_Xms=''
+  # 留空则自动计算
+  SET_JVM_Xmx=''
+  # 留空则自动计算
+  SET_JVM_Xmn=''
+
+  SET_JVM_Xss='256k'
+  SET_JVM_XXPermSize='64m'
+  SET_JVM_XXMaxPermSize='256m'
+  SET_CATALINA_OPTS='CATALINA_OPTS="$CATALINA_OPTS -Dcom.sun.management.jmxremote -Djava.rmi.server.hostname=${RMI_SERVER_NAME} -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dfoo.jmx=true -Dfoo.jmx.detailed=true"'
+  SET_JAVA_OPTS='JAVA_OPTS="$JAVA_OPTS -server -Xms${SET_JVM_Xms} -Xmx${SET_JVM_Xmx} -Xmn${SET_JVM_Xmn} -Xss${SET_JVM_Xss} -XX:PermSize=${SET_JVM_XXPermSize} -XX:MaxPermSize=${SET_JVM_XXMaxPermSize} -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/data/www/temp -XX:+DisableExplicitGC -XX:+UseConcMarkSweepGC -XX:+UseCMSCompactAtFullCollection -XX:+CMSClassUnloadingEnabled"'
+
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  # 此处以下代码请不要修改
+  SERVER_HOSTNAME=`hostname`
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi      
+
+  # 加载PROMETHEUS配置
+  loadConf prometheus.conf ;
+
+  # 加载TOMCAT配置
+  # loadConf tomcat_setenv.conf ;
+
+  loadTomcatRes ;
+
+  source /etc/profile
+  JAVA_HOME=/usr/java/jdk
+  export JAVA_HOME
+}
+
+function doParam(){
+  local param=
+  [ $# == 0 ] && return ;
+  for param in "$@" ; do
+      local paramName=`echo ${param} | awk -F'=' '{print $1}'`
+      local paramValue=`echo ${param} | awk -F'=' '{print $NF}'`
+      case "${paramName}" in
+          #   -file=http://www.xxx.com/conf/tomcat_setenv.conf    default=local(tomcat_setenv.conf)
+          #   此参数暂不支持
+          -tomcat.setenv.file)
+              TOMCAT_SETENV_FILE=${paramValue}
+              processor_param_tomcat_setenv_file ;;
+          -tomcat.install.version)
+              TOMCAT_INSTALL_VERSION=${paramValue} 
+              #processor_param_tomcat_install_version 
+              ;;
+          #   -probe.install.version=233                 default=notInstall
+          -probe.install.version)
+              PROBE_INSTALL_VERSION=${paramValue} ;;    
+          #   -probe.userpasswd=admin:123456     default=admin:randompasswd
+          -probe.userpasswd)
+              PROBE_USER=`awk -F: '{print $1}' <<< ${paramValue}`
+              PROBE_PASSWORD=`awk -F: '{print $NF}' <<< ${paramValue}` ;;    
+          #   -tomcat.manager=true|false         default=true
+          -tomcat.manager)
+              INSTALL_TOMCAT_MANAGER=${paramValue} ;;
+          #   -tomcat.display.version='Servlet'  default='sws'
+          -tomcat.display.version)
+              TOMCAT_DISPLAY_VERSION=${paramValue} ;;
+          #   -tomcat.install.name=name1:name2           No default
+          -tomcat.install.name)
+              TOMCAT_INSTALL_NAME=${paramValue} ;;
+          #   -tomcat.install.path='/usr/local'  default='/usr/local'
+          -tomcat.install.path)
+          #   此参数暂不支持
+              TOMCAT_INSTALL_PATH=${paramValue} ;;
+          -pkg.download.path)
+              PKG_DOWNLOAD_PATH=${paramValue} ;;
+          -tomcat.http.uri.encoding)
+              TOMCAT_HTTP_URI_ENCODING=${paramValue} ;;
+          -tomcat.service.start)
+              TOMCAT_SERVICE_START=${paramValue} ;;
+          -h|-help)
+              prometheus_help $(basename $0) 
+              exit 0 ;;
+      esac
+  done
+}
+
+function processor_param_tomcat_setenv_file(){
+  [ ".${TOMCAT_SETENV_FILE}" == "." ] && return ;
+  execWget ${TOMCAT_SETENV_FILE} ${PROMETHEUS_HOME}/etc/
+}
+
+function processor_param_tomcat_install_version(){
+  # tomcat 安装版本处理
+  local tomcatTrunkName
+  # update 参数，升级当前tomcat
+  if [ "${TOMCAT_INSTALL_VERSION}" == "update" ] ; then
+     tomcatTrunkName=`acqTomcatTrunkName ${TOMCAT_APP_NAME_OPT[0]}`
+     TOMCAT_INSTALL_VERSION=`processor_param_tomcat_install_version_ ${tomcatTrunkName}`
+     return ;
+  fi 
+  # tomcat安装分支默认版本
+  [ ${#TOMCAT_INSTALL_VERSION} != "1" ] && return ;
+  TOMCAT_INSTALL_VERSION=`processor_param_tomcat_install_version_ ${TOMCAT_INSTALL_VERSION}`
+}
+
+function processor_param_tomcat_install_version_(){
+  # tomcat 安装版本获取
+  local tomcatInstallVersion=$1
+  local tomcatVersion
+  for tomcatVersion in ${TOMCAT_VERSION_OPT[*]} ; do
+      if [ ${tomcatVersion::1} == ${tomcatInstallVersion} ] ; then 
+         echo ${tomcatVersion}
+         break ;
+      fi
+  done  
+}
+
+function init(){
+  # 安装环境软件
+  execYum gcc gcc-c++
+  #yum -y install gcc gcc-c++ >/dev/null 2>&1
+  # 加载TOMCAT配置
+  loadConf tomcat_setenv.conf ;
+  processor_param_tomcat_install_version ;
+}
+
+function tomcatSelectVersion(){
+  # 选择tomcat版本
+  # 输入选择安装的tomcat版本
+  # echo "tomcat v8 please install jdk v1.7+"
+  if [ ".${TOMCAT_INSTALL_VERSION}" == "." ] ; then
+     echoAllTomcatVersion ;
+     local tomcatMaxCnt=$(( ${#TOMCAT_VERSION_OPT[@]} - 1 ))
+     echoPlus 32 "Select Tomcat Version:"
+     local quick
+     read -p "please select: " quick
+     if [ "${quick}" -ge "0" ] && [ "${quick}" -le "${tomcatMaxCnt}" ] ; then
+        TOMCAT_INSTALL_VERSION=${TOMCAT_VERSION_OPT[${quick}]}
+     else
+        echoPlus 31 "The wrong choice, exit the program!" ;
+        exit 1 ;
+     fi
+  fi
+  tomcatSelectVersion_ ; 
+}
+
+function tomcatSelectVersion_(){
+  # 选择tomcat版本
+  local tomcatVersionNum=${TOMCAT_INSTALL_VERSION}
+  # ${TOMCAT_PKG_6039}   TOMCAT_PKG_6039='http://archive.apache.org/dist/tomcat/tomcat-6/v6.0.39/bin/apache-tomcat-6.0.39.zip'
+  local tomcatPkgDownloadUrl=`eval echo "$""TOMCAT_PKG_""${tomcatVersionNum}"`
+  # ${TOMCAT_JMX_REMOTE_6039}   TOMCAT_JMX_REMOTE_6039='http://archive.apache.org/dist/tomcat/tomcat-6/v6.0.39/bin/extras/catalina-jmx-remote.jar'
+  local tomcatJmxRemoteDownloadUrl=`eval echo "$""TOMCAT_JMX_REMOTE_""${tomcatVersionNum}"`
+  # apache-tomcat-6.0.39.zip
+  local tomcatPkgName=`basename ${tomcatPkgDownloadUrl}`
+  # apache-tomcat-6.0.39
+  local tomcatVersionName=${tomcatPkgName/.zip/}
+  # 取tomcat_name  tomcat6
+  TOMCAT_NAME=`echo ${tomcatVersionName} | awk -F[-.] '{print "tomcat"$3}'`
+  # 取tomcatPkgPath
+  TOMCAT_PKG_NAME=${tomcatVersionName}
+  # catalina-jmx-remote.jar
+  local tomcatJmxReomoteName=`basename ${tomcatJmxRemoteDownloadUrl}`
+  # ${TPM6039}  TPM6039='a3d585de50bfe7998a2034ec6ead0b09'
+  local tomcatPkgMd5=`eval echo "$""TOMCAT_PKG_MD5_""${tomcatVersionNum}"`
+  # ${TJM6039}  TJM6039='48d87deb6c160a23aafbbb7124509a2f'
+  local tomcatJmxRemoteMd5=`eval echo "$""TOMCAT_JMX_REMOTE_MD5_""${tomcatVersionNum}"`
+  # TOMCAT_JULI_ADAPTERS_6039='http://archive.apache.org/dist/tomcat/tomcat-6/v6.0.39/bin/extras/tomcat-juli-adapters.jar'
+  local tomcatJuliAdaptersDownloadUrl=`eval echo "$""TOMCAT_JULI_ADAPTERS_""${tomcatVersionNum}"`
+  # TOMCAT_JULI_ADAPTERS_MD5_6039='07a6069de49a27dbb1d58a3178360ef6'
+  local tomcatJuliAdaptersMd5=`eval echo "$""TOMCAT_JULI_ADAPTERS_MD5_""${tomcatVersionNum}"`
+  # tomcat-juli-adapters.jar
+  local tomcatJuliAdaptersName=`basename ${tomcatJuliAdaptersDownloadUrl}`
+  # TOMCAT_JULI_6039='http://archive.apache.org/dist/tomcat/tomcat-6/v6.0.39/bin/extras/tomcat-juli.jar'
+  local tomcatJuliDownloadUrl=`eval echo "$""TOMCAT_JULI_""${tomcatVersionNum}"`
+  # TOMCAT_JULI_MD5_6039='0fbb2523c801a9474d8525d6e6c9752a'
+  local tomcatJuliMd5=`eval echo "$""TOMCAT_JULI_MD5_""${tomcatVersionNum}"`
+  # tomcat-juli.jar
+  local tomcatJuliName=`basename ${tomcatJuliDownloadUrl}`
+
+  local tomcatLog4jDownloadUrl=${TOMCAT_LOG4J}
+  local tomcatLog4jMD5=${TOMCAT_LOG4J_MD5}
+  local tomcatLog4jName=`basename ${tomcatLog4jDownloadUrl}`
+
+  # 下载 组件
+  execWget ${tomcatPkgDownloadUrl} ${PKG_DOWNLOAD_PATH}/${tomcatVersionName}/ ${tomcatPkgMd5} ;
+  execWget ${tomcatJmxRemoteDownloadUrl} ${PKG_DOWNLOAD_PATH}/${tomcatVersionName}/ ${tomcatJmxRemoteMd5} ;
+  execWget ${tomcatJuliAdaptersDownloadUrl} ${PKG_DOWNLOAD_PATH}/${tomcatVersionName}/ ${tomcatJuliAdaptersMd5} ;
+  execWget ${tomcatJuliDownloadUrl} ${PKG_DOWNLOAD_PATH}/${tomcatVersionName}/ ${tomcatJuliMd5} ; 
+  execWget ${tomcatLog4jDownloadUrl} ${PKG_DOWNLOAD_PATH}/${tomcatVersionName}/ ${tomcatLog4jMD5} ;   
+  # 此处代码改进
+  # execUnzip ${PKG_DOWNLOAD_PATH}/${tomcatVersionName}/${tomcatPkgName} ${PKG_DOWNLOAD_PATH}/tomcat
+  echoPlus info "unzip ${PKG_DOWNLOAD_PATH}/${tomcatVersionName}/${tomcatPkgName} to ${PKG_DOWNLOAD_PATH}/tomcat"
+  unzip -o ${PKG_DOWNLOAD_PATH}/${tomcatVersionName}/${tomcatPkgName} -d ${PKG_DOWNLOAD_PATH}/tomcat >/dev/null 2>&1
+
+  createTomcatContext ${PKG_DOWNLOAD_PATH}/tomcat/${tomcatVersionName}/conf
+  # 复制jar包到tomcat lib     /pkg/apache-tomcat-6.0.39/               /data/www/software/tomcatEZ/pkg/tomcat/apache-tomcat-6.0.39/lib
+  execCp ${PKG_DOWNLOAD_PATH}/${tomcatVersionName}/${tomcatJmxReomoteName} ${PKG_DOWNLOAD_PATH}/tomcat/${tomcatVersionName}/lib/
+  execCp ${PKG_DOWNLOAD_PATH}/${tomcatVersionName}/${tomcatJuliAdaptersName} ${PKG_DOWNLOAD_PATH}/tomcat/${tomcatVersionName}/lib/
+  execCp ${PKG_DOWNLOAD_PATH}/${tomcatVersionName}/${tomcatLog4jName} ${PKG_DOWNLOAD_PATH}/tomcat/${tomcatVersionName}/lib/
+  execCp ${PKG_DOWNLOAD_PATH}/${tomcatVersionName}/${tomcatJuliName} ${PKG_DOWNLOAD_PATH}/tomcat/${tomcatVersionName}/bin/
+  # 安全配置，修改tomcat的版本信息
+  createTomcatVersion ${PKG_DOWNLOAD_PATH}/tomcat/${tomcatVersionName} ;
+
+  makeJsvc ${PKG_DOWNLOAD_PATH}/tomcat/${tomcatVersionName} ;
+}
+
+
+function makeJsvc(){
+  # 编译 jsvc 需要JDK && JAVA_HOME
+  # @param tomcat pkg path
+  local tomcatPkgName=$1
+  # 若找到编译好的jsvc则，不重新编译jsvc
+  if [ -x ${tomcatPkgName}/bin/jsvc ] ; then
+     echoPlus info "tomcat daemon JSVC already exists!"
+     return ;
+  fi   
+  makeJsvc_ ${tomcatPkgName} ;
+}
+
+function makeJsvc_(){
+  # 编译 jsvc 需要JDK && JAVA_HOME
+  # @param tomcat pkg path
+  local tomcatPkgName=$1
+  local commonsDaemonNativePath=${tomcatPkgName}/bin/commons-daemon-native.tar.gz
+  tar zxf ${commonsDaemonNativePath} -C ${tomcatPkgName}/bin
+  #tar zxf ./pkg/`basename ${TOMCAT_PKG_NAME/.zip/}`/bin/commons-daemon-native.tar.gz -C ./pkg/`basename ${TOMCAT_PKG_NAME/.zip/}`/bin
+  cd ${tomcatPkgName}/bin/commons-daemon-1.0.15-native-src/unix
+  #cd ./pkg/`basename ${TOMCAT_PKG_NAME/.zip/}`/bin/commons-daemon-1.0.15-native-src/unix
+  chmod +x ./configure
+  #./configure  >/dev/null 2>&1
+  #make         >/dev/null 2>&1
+  #make clean   >/dev/null 2>&1
+  #make         >/dev/null 2>&1
+  #mv jsvc ../../ 
+  #cd -         >/dev/null 2>&1
+  ./configure
+  make
+  make clean
+  make
+  mv jsvc ../../
+  cd -
+}
+
+function probeSelectVersion(){
+  if [ ".${PROBE_INSTALL_VERSION}" == "." ] ; then
+     echoAllProbeVersion ;
+     echoPlus 32 "Select Probe Version:" ;
+     local quick
+     read -p "please select: " quick
+     local probeMaxCnt=$(( ${#PSI_PROBE_VERSION_OPT[@]} - 1 ))
+     if [ "${quick}" -ge "0" ] && [ "${quick}" -le "${probeMaxCnt}" ]; then
+        PROBE_INSTALL_VERSION=${PSI_PROBE_VERSION_OPT[${quick}]}
+     else
+        echoPlus 31 "The wrong choice, exit the program!" ;
+        exit 1 ;
+     fi
+  fi
+  # 定义为不安装probe
+  [ ".${PROBE_INSTALL_VERSION}" == ".notInstall" ] && return 
+  probeSelectVersion_ ;
+}
+
+
+function probeSelectVersion_(){
+  # 选择安装的psi-probe版本
+  local psiProbeVersionNum=${PROBE_INSTALL_VERSION}
+  local psiProbeDownloadUrl=`eval echo "$""PROBE_PKG_""${psiProbeVersionNum}"`
+  # probe-2.3.3.zip
+  local psiProbePkgName=`basename ${psiProbeDownloadUrl}`
+  # probe-2.3.3
+  local psiProbeVersionName=${psiProbePkgName/.zip/}
+  local psiProbePkgMd5=`eval echo "$""PROBE_PKG_MD5_""${psiProbeVersionNum}"`
+  # echo ${PSI_PROBE_DOWNLOAD_URL}
+  # 下载 probe
+  execWget ${psiProbeDownloadUrl} ${PKG_DOWNLOAD_PATH}/${psiProbeVersionName}/ ${psiProbePkgMd5} ;
+
+  execUnzip ${PKG_DOWNLOAD_PATH}/${psiProbeVersionName}/${psiProbePkgName} ${PKG_DOWNLOAD_PATH}/${psiProbeVersionName}/tmp ;
+  execUnzip ${PKG_DOWNLOAD_PATH}/${psiProbeVersionName}/tmp/probe.war ${PKG_DOWNLOAD_PATH}/probe ;
+}
+
+function selectTomcatAppName(){
+  #  安装工程
+  if [ ".${TOMCAT_INSTALL_NAME}" == "." ] ; then
+     echoAllTomcatAppName ;
+     local tomcatMaxCnt=$(( ${#TOMCAT_APP_NAME_OPT[@]} - 1 ))
+     echoPlus 31 "input <all> setup all tomcat"
+     # 使read能支持回格删除
+     stty erase "^H"
+     local quick
+     read -p "please select: " quick
+     case "$quick" in
+       all|ALL)
+             installTomcat_ all ;
+         ;;
+       *) 
+         if [ "${quick}" -ge "0" ] && [ "${quick}" -le "${tomcatMaxCnt}" ] ; then
+            installTomcat ${quick} ;
+         else
+            echoPlus 31 "The wrong choice, exit the program!" ;
+            exit 1
+         fi
+         ;;
+     esac
+  else
+     local tomcatAppName
+     IFS=$'\:'
+     for tomcatAppName in "${TOMCAT_INSTALL_NAME}" ; do
+         installTomcat_ ${tomcatAppName} ;
+     done
+  fi
+}
+
+function selectTomcatAppName_temp(){
+#  安装工程
+tomcatMaxCnt=$(( ${#TOMCAT_APP_NAME_OPT[@]} - 1 ))
+echoPlus 31 "input <all> setup all tomcat"
+#使read能支持回格删除
+stty erase "^H"
+read -p "please select: " quick
+case "$quick" in
+  all|ALL)
+     local indexStart=0
+     local indexEnd=${tomcatMaxCnt}
+     ;;
+  *) 
+     if [ "${quick}" -ge "0" ] && [ "${quick}" -le "${tomcatMaxCnt}" ] ; then
+        local indexStart=${quick}
+        local indexEnd=${quick}
+     else
+        echoPlus 31 "The wrong choice, exit the program!" ;
+        exit 1
+     fi
+     ;;
+esac
+#取需要安装的tomcat数量
+installTomcat ${indexStart} ${indexEnd} ;
+}
+
+function jmxConfig(){
+  #jmx配置 代码废弃改为自动获取
+  echo ${DIVIDING_LINE}
+  echo "setup rmi server hostname"
+  echo -e "1) Server ip \e[32m${SERVER_IP}\e[0m.\n2) Server hostname \e[32m${SERVER_HOSTNAME}\e[0m.\n3) The default configuration (\e[32mmyappserver.com\e[0m).\n\e[31mCustom input hostname or ip.\e[0m"
+  read -p "please select: " quick
+  case $quick in
+       1) echo -e  "you select \e[32m${SERVER_IP}\e[0m." ; RMI_SERVER_NAME=${SERVER_IP} ;;
+       2) echo -e  "you select \e[32m${SERVER_HOSTNAME}\e[0m." ; RMI_SERVER_NAME=${SERVER_HOSTNAME} ;;
+       3) echo -e  "you select \e[32mmyappserver.com\e[0m." ; RMI_SERVER_NAME="myappserver.com" ;;
+       *) echo -e  "Custom input \e[32m${quick}\e[0m." ; RMI_SERVER_NAME=${quick} ;;
+  esac
+}
+
+function creatingBasicDirectory(){
+  #创建基本目录
+  echoPlus 32 "Creating a basic directory ..."
+  execMkdir /data/www/software ;
+  execMkdir /data/www/shell ;
+  execMkdir /data/www/ROOT ;
+  execMkdir /data/www/conf/apps ;
+  execMkdir /data/www/logs/apps ;
+  execMkdir /data/www/temp ;
+  execMkdir /data/www/update ;
+  execMkdir /data/www/install ;
+  execMkdir /data/www/cache/dubbo ;
+}
+
+function createAccount(){
+  #创建账户
+  echoPlus 32 "Create account <tomcat:tomcat> ..."
+  groupadd tomcat 2>/dev/null
+  useradd -g tomcat -s /sbin/nologin tomcat 2>/dev/null
+}
+
+function configuringTomcatPermissions(){
+  # 配置权限
+  # @param tomcat app name
+  local tomcatAppName=$1
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  local tomcatAppPath=${TOMCAT_INSTALL_PATH}/${TOMCAT_NAME}-${tomcatHttpPort}-${tomcatAppName}
+  echoPlus 32 "Configuring tomcat Permissions ..."
+  chown -R root.root ${tomcatAppPath}
+  chmod -R 755 ${tomcatAppPath}
+  find ${tomcatAppPath} -type f -exec chmod 664 {} \;
+  #赋予启动命令可执行权限
+  echoPlus 32 "Giving the start command executable permission ..."
+  chmod 775 ${tomcatAppPath}/bin/jsvc
+  chmod 775 ${tomcatAppPath}/bin/daemon.sh
+  #chmod 700 ${tomcatAppPath}/bin/setenv.sh
+  echoPlus 32 "Configuration directory permissions ..."
+  chown -R root:root /data/www/ROOT/${tomcatAppName}
+  find /data/www/ROOT/${tomcatAppName} -type f -exec chmod 664 {} \;
+  chown -R tomcat.tomcat ${tomcatAppPath}/work
+  chown tomcat.tomcat ${tomcatAppPath}/conf
+  chown tomcat:tomcat /data/www/logs/apps/
+  chown tomcat:tomcat -R /data/www/logs/apps/${tomcatHttpPort}-${tomcatAppName}
+  find /data/www/logs/apps/${tomcatHttpPort}-${tomcatAppName} -type f -exec chmod 666 {} \;
+  find /data/www/logs/apps/${tomcatHttpPort}-${tomcatAppName} -type d -exec chmod 755 {} \;
+  chown -R tomcat.tomcat /data/www/cache ;
+}
+
+
+function installCronolog(){
+  # 安装cronolog 用于分割tomcat日志
+  # CRONOLOG='./pkg/cronolog-1.6.2/cronolog-1.6.2.tar.gz'
+  if [ -f ${CRONOLOG} ] ; then
+     # cronolog-1.6.2.tar.gz
+     local cronologPkgName=`basename ${CRONOLOG}`
+     # cronolog-1.6.2
+     local cronologName=`basename ${CRONOLOG/.tar.gz/}`
+     # ./pkg/cronolog-1.6.2/
+     local cronologTarPath=${CRONOLOG/${cronologPkgName}/}${cronologName}
+     tar zxf ${CRONOLOG}
+     cd ${cronologTarPath}
+     ./configure
+     make && make install 
+     CRONOLOG_PATH='/usr/local/sbin/cronolog'
+  fi
+}
+
+function installTomcat(){
+# 安装tomcat
+# @param index start
+# @param index end
+local index=$1
+local tomcatAppName=${TOMCAT_APP_NAME_OPT[$index]}
+installTomcat_ ${tomcatAppName} ;
+}
+
+function installTomcat_(){
+  # 安装tomcat
+  # @param tomcatAppName
+  local tomcatAppName=$1
+  if [ ".${tomcatAppName}" == ".all" ] ; then
+     for tomcatAppName in ${TOMCAT_APP_NAME_OPT[*]} ; do
+         installTomcat_ ${tomcatAppName} ;
+     done
+     return ;
+  fi
+  if [[ "${TOMCAT_APP_NAME_OPT[@]/$tomcatAppName/}" == "${TOMCAT_APP_NAME_OPT[@]}" ]] ; then
+     echoPlus 31 "tomcat app name not in tomcat_setenv.conf" ;
+     return ;
+  fi  
+  # tomcatAppName=`acqTomcatAppNameExclusiveDisable ${tomcatAppName}`
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  local tomcatAppPath=${TOMCAT_INSTALL_PATH}/${TOMCAT_NAME}-${tomcatHttpPort}-${tomcatAppName}
+  # 输出安装信息
+  echoPlus 95 "Installation ${tomcatHttpPort}-${tomcatAppName} ..."
+  # 清理历史数据
+  delTomcatInstllFile ${tomcatAppName} ;
+  # 生成tomcat程序包和webapps目录文件
+  buildTomcatFile ${tomcatAppName} ;
+  # 修改setenv.sh增加内存优化和JMX配置,此配置将生效于 catalina.sh & daemon.sh
+  createTomcatSetenvSh ${tomcatAppName} ${TOMCAT_NAME} ;
+  # 修改server.xml配置文件
+  createTomcatServerXml ${tomcatAppName} ${TOMCAT_NAME} ;
+  # 修改tomcat-users.xml
+  createTomcatUserXml ${tomcatAppName} ${TOMCAT_NAME} ;
+  # 修改log4j.properties
+  createTomcatLog4jProperties ${tomcatAppName} ${TOMCAT_NAME} ;
+  # 连接其它配置文件
+  # execLn ${tomcatAppPath}/conf/logging.properties /data/www/conf/.logging-${tomcatHttpPort}-${tomcatAppName}.properties ;
+  execLn ${tomcatAppPath}/bin/setenv.sh /data/www/conf/.setenv-${tomcatHttpPort}-${tomcatAppName}.sh ;
+  # 配置权限
+  configuringTomcatPermissions ${tomcatAppName} ;
+  # 软链接安装路径到/data/www/install
+  execLn ${tomcatAppPath} /data/www/install/
+
+  echoPlus 92 "${tomcatAppPath} Installation is complete ..." ;
+}
+
+
+function buildTomcatFile(){
+  # 生成tomcat程序包和webapps目录文件
+  # @param tomcat app name
+  local tomcatAppName=$1
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  local appWebappsPath=`acqAppWebappsPath ${tomcatAppName}`
+  local tomcatAppPath="${TOMCAT_INSTALL_PATH}/${TOMCAT_NAME}-${tomcatHttpPort}-${tomcatAppName}"
+  # INSTALL_TOMCAT_MANAGER
+  execCp "${PKG_DOWNLOAD_PATH}/tomcat/${TOMCAT_PKG_NAME}/" "${tomcatAppPath}/" ;
+  execMkdir "/data/www/ROOT/${tomcatAppName}/${appWebappsPath}" ;
+  redirectTomcatLog ${tomcatAppName} ;
+  if [ ".${INSTALL_TOMCAT_MANAGER}" == ".true" ] ; then
+     execCp "${tomcatAppPath}/webapps/host-manager" "/data/www/ROOT/${tomcatAppName}/" ;
+     execCp "${tomcatAppPath}/webapps/manager" "/data/www/ROOT/${tomcatAppName}/" ;
+  fi
+
+  if [ ".${PROBE_INSTALL_VERSION}" != ".notInstall" ] ; then
+     execCp "${PKG_DOWNLOAD_PATH}/probe" "/data/www/ROOT/${tomcatAppName}/" ;
+     redirectProbeLog ${tomcatAppName} ;
+  fi
+}
+
+function redirectProbeLog(){
+  # 重定向probe日志路径
+  # @param tomcat app name
+  local tomcatAppName=$1
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  local appLogsPath="/data/www/logs/apps/${tomcatHttpPort}-${tomcatAppName}/tomcat"
+  sed -i "s#\${catalina.base}\/logs#${appLogsPath}#" "/data/www/ROOT/${tomcatAppName}/probe/WEB-INF/classes/log4j.properties"
+}
+
+
+function redirectTomcatLog(){
+  # 重定向tomcat日志路径
+  # @param tomcat app name
+  local tomcatAppName=$1
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  local tomcatAppPath="${TOMCAT_INSTALL_PATH}/${TOMCAT_NAME}-${tomcatHttpPort}-${tomcatAppName}"
+  local appLogsPath="/data/www/logs/apps/${tomcatHttpPort}-${tomcatAppName}/tomcat"
+  execMkdir ${appLogsPath}
+  execMkdir ${appLogsPath}/../app
+  sed -i "s#\${catalina.base}\/logs#${appLogsPath}#" ${tomcatAppPath}/conf/logging.properties
+  # 日志使用LOG4J则不需要logging.properties
+  mv ${tomcatAppPath}/conf/logging.properties ${tomcatAppPath}/conf/logging.properties.bak
+}
+
+function tomcat_service_start(){
+  [ ".${TOMCAT_SERVICE_START}" == ".true" ] || return ; 
+  ${PROMETHEUS_HOME}/bin/tomcat kill ;
+  ${PROMETHEUS_HOME}/bin/tomcat start ;
+}
+
+#=========================================================================
+# 初始化
+config ;
+# 参数
+
+doParam $@ ;
+init ;
+# 创建基本目录
+creatingBasicDirectory ;
+
+# 创建tomcat账户
+createAccount ;
+
+# 选择并安装tomcat版本
+tomcatSelectVersion ;
+
+# 选择并安装probe版本
+probeSelectVersion ;
+
+# jmx配置 代码废弃，改为自动获取IP
+# jmxConfig ;
+
+selectTomcatAppName ;
+
+# 日志可以不清理
+# rm -rf /data/www/logs/apps
+  
+echoPlus 32 "Installation is complete!"
+
+tomcat_service_start ;
+
+exit 0 ;

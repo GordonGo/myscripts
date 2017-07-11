@@ -1,0 +1,203 @@
+#!/bin/bash
+
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  EZ Nas
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#   by:  2015.1
+#===============================================================================
+
+# 查看当前挂载信息（NFS）
+# eznas.sh l
+
+# mount所有NFS挂载
+# eznas.sh m
+
+# umount所有NFS挂载
+# eznas.sh u
+
+# 新增挂载NFS
+# $1 NFS_SERVER_PATH 服务器路径 eg: 172.16.15.179:/nx3500v5/shunwang.com/www.shunwang.com
+# $2 LOCAL_PATH 本地路径(这个是相对路径/data/www/nas)  eg: page  如果使用page,那实际地址为/data/www/nas/page
+# $3 ACCOUNT 账户可选参数，默认为tomcat
+# eznas.sh NFS_SERVER_PATH LOCAL_PATH [ACCOUNT]
+
+# echo "EZnas Version 1.0.1"
+
+function config(){
+  # 全局配置项
+  
+  # NAS挂载根路径
+  MOUNT_PATH='/data/www/nas'
+  # 挂载参数
+  MOUNT_PARAM='rw,bg,hard,nointr,tcp,nolock,vers=3,timeo=2,retrans=10,rsize=32768,wsize=32768'
+  
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi 
+
+  # 加载PROMETHEUS配置
+  loadConf prometheus.conf ;
+}
+
+function doParam(){
+  # 检查参数是否合法,并执行参数对应的函数
+  if [ $# == 0 ] ; then
+     listMount
+     exit 0 ;
+  fi
+
+  local action=$1
+  if [ $# == 1 ] ; then
+     case "${action}" in
+       l|list)
+              listMount ;
+              exit 0 ;;
+       h|help)
+              prometheus_help $(basename $0) 
+              exit 0 ;;
+       m|mount)
+              doMount ;
+              listMount ;
+              exit 0 ;;
+       u|unmount)
+              doUnmount ;
+              listMount ;
+              exit 0 ;;
+     esac
+  fi
+
+  if [ $# == 2 ] ; then
+     add_mount $1 $2 tomcat ;
+  fi
+
+  if [ $# == 3 ] ; then
+     add_mount $1 $2 $3 ;
+  fi 
+}
+
+function doMount(){
+  mount -a
+}
+
+function listMount(){
+  # 查看当前NFS挂载信息
+  listMount_ ;
+  echo ${DIVIDING_LINE}
+  IFS=$'\n'
+  for line in `cat /etc/fstab` ; do
+      # 过滤注释
+      [ ".`grep ^# <<< ${line}`" != "." ] && continue
+      if [ "`echo ${line} | grep -c nfs`" == "1" ] ; then
+         local nfsServerPath=`echo ${line} | awk -F'[\t| ]+' '/nfs/ {print $1}'`
+         local localPath=`echo ${line} | awk -F'[\t| ]+' '/nfs/ {print $2}'`
+         local account=`ls ${localPath} -ld | awk '{print $3}'`
+         local isMount=`mountpoint ${localPath} | grep -c 'is a mountpoint'`
+         if [ ".${isMount}" == ".1" ] ; then
+            local mounted=yes
+         else
+            local mounted=no
+         fi
+         listMount_ ${nfsServerPath} ${localPath} ${mounted} ${account} ;
+      fi
+  done
+  echo ${DIVIDING_LINE}
+}
+
+function listMount_(){
+  # (多态)查看当前NFS挂载信息
+  local nfsServerPath=$1
+  local localPath=$2
+  local mounted=$3
+  local account=$4
+  if [ ".${nfsServerPath}" == "." ] ; then
+     echo ${DIVIDING_LINE}
+     printf "\e[36m%-35s %-35s %-10s %-15s\e[0m\n" NfsServerPath LocalPath Mounted Account
+  else
+     if [ "${mounted}" == "yes" ] ; then
+        printf "\e[32m%-35s %-35s %-10s %-15s\e[0m\n" ${nfsServerPath} ${localPath} ${mounted} ${account}
+     else
+        printf "\e[33m%-35s %-35s %-10s %-15s\e[0m\n" ${nfsServerPath} ${localPath} ${mounted} ${account}
+     fi 
+  fi
+}
+
+function doUnmount(){
+  # 卸载NFS挂载点
+  IFS=$'\n'
+  for line in `cat /etc/fstab` ; do
+      [ ".`grep ^# <<< ${line}`" != "." ] && continue
+      if [ "`echo ${line} | grep -c nfs`" == "1" ] ; then
+         local localPath=`echo ${line} | awk -F'[\t| ]+' '/nfs/ {print $2}'`
+         umount ${localPath}
+      fi
+  done
+}
+
+function createAccount(){
+  # 创建账户
+  local account=$1
+  echoPlus 32 "Create account ..."
+  groupadd ${account} 2>/dev/null
+  useradd -g ${account} ${account} 2>/dev/null
+}
+
+function add_mount(){
+  # 增加挂载配置
+  local nfsServerPath=$1
+  local localPath=${MOUNT_PATH}/$2
+  local account=$3
+  # 创建本地路径
+  execMkdir ${localPath} ;
+  checkRepeat ${nfsServerPath} ${2}
+  [ ".${account}" == "." ] && account='tomcat'
+  createAccount ${account} ;
+  # 修改权限
+  chown -R ${account}.${account} ${localPath}
+  #172.16.16.251:/log    /data/www/nas/log        nfs     rw,bg,hard,nointr,tcp,nolock,vers=3,timeo=2,retrans=10,rsize=32768,wsize=32768 0 0
+  local fstabConfig=${nfsServerPath}" "${localPath}" nfs "${MOUNT_PARAM}" 0 0"
+  echo ${fstabConfig} >> /etc/fstab
+  addRcLocal ;
+  listMount ;
+  exit 0
+}
+
+function checkRepeat(){
+  # 判断新增的NFS挂载是否重复
+  local paramNfsServerPath=$1
+  local paramLocalPath=${MOUNT_PATH}/$2
+  IFS=$'\n'
+  for line in `cat /etc/fstab` ; do
+      if [ "`echo ${line} | grep -c nfs`" == "1" ] ; then
+         local nfsServerPath=`echo ${line} | awk -F'[\t| ]+' '/nfs/ {print $1}'`
+         local localPath=`echo ${line} | awk -F'[\t| ]+' '/nfs/ {print $2}'`
+         if [ ${paramNfsServerPath} == ${nfsServerPath} ] && [ ${paramLocalPath} == ${localPath} ] ; then
+             echoPlus 31 "Repeat to add "${paramNfsServerPath}" "${paramLocalPath} ;
+             exit 1 ;
+         fi
+      fi
+  done
+}
+
+function addRcLocal(){
+  # rc.local 中增加启动
+  local cnt=`grep -c 'mount -a' /etc/rc.local`
+  if [ "${cnt}" == "0" ] ; then
+     echo 'mount -a' >> /etc/rc.local
+  fi
+}
+
+config ;
+doParam $@ ;
+exit 0 ;
+
+
+

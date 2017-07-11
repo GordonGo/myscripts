@@ -1,0 +1,284 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  deployment project
+#   AUTHOR: Liang Jian
+#   DATE: 2014-10-10
+#   QQ:  80327044
+#===============================================================================
+#   支持参数化安装
+#   by 2.1.0版本  2015-04-22
+#===============================================================================
+#   命令模式部署
+#   test_ok -tomcat.service.restart=true                                                       default=false
+#   test_ok -tomcat.app.backup=true                                                            default=tomcat_setenv.conf
+#   test_ok -tomcat.del.logs=true                                                              default=false
+#   tesk_ok -tomcat.app.name=demo                                                              No default
+#   test_ok -tomcat.project.deployment.pkg.path=/data/www/update/20150404-093050/admin.war     No default
+#   test_ok -tomcat.project.deployment.pkg.download.url=http://res.swomc.net/admin.war         No default
+#   test_ok -tomcat.project.deployment.pkg.md5code=82309362f0a05052ad851fdef01f4671            No default
+#   test_ok -tomcat.project.deployment.pkg.local.path=/data/www/update/default                 default=/data/www/update/default                       
+#   -tomcat.project.deployment.type=full                                                       No default(by pkg type)
+#   test_ok -tomcat.project.conf.download.url=http://res.swomc.net/                            default=tomcat_setenv.conf
+#   test_ok -tomcat.project.conf.download.name=log4j.properties:server.properties              default=tomcat_setenv.conf
+
+#   deployment_project -tomcat.app.name=dome  \
+#   -tomcat.project.conf.download.url=http://res.swomc.net/test/ -tomcat.project.conf.download.name=log4j.properties:server.properties \
+#   -tomcat.project.deployment.pkg.download.url=http://read:12345678@package.shunwang.com/svn/aplus/icafebutler-monitor -T/2015-06-02_17-27-29/21/icafebutler-monitor.war \
+#   -tomcat.project.deployment.pkg.md5code=
+#===============================================================================
+
+#   deployment_project -tomcat.app.name=allegan -tomcat.project.deployment.pkg.download.url=http://res.51xianqu.net/deploy/api/gray/pkg/allegan.war -tomcat.service.restart=true
+
+#   /usr/local/prometheus/bin/deployment_project -tomcat.app.name=sanguo -tomcat.project.deployment.pkg.path=/data/www/update/default/sanguo.war -tomcat.service.restart=true
+
+
+#   deployment_project -tomcat.app.name=test1 \
+#   -tomcat.project.deployment.pkg.download.url=http://view:111@package.shunwang.com/svn/aplus/icafebutler-monitor-T/2015-06-02_17-27-29/21/icafebutler-monitor.war \
+#   -tomcat.service.restart=true 
+
+function config(){
+  #-------配置项--------------------------
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  # 服务管理，部署过程是否重启tomcat服务 
+  # false  热部署方式，不重启服务
+  # true   非热部署方式，会重启服务
+  TOMCAT_SERVICE_RESTART=false
+
+  TOMCAT_APP_NAME=
+
+  TOMCAT_PROJECT_DEPLOYMENT_PKG_PATH=
+
+  TOMCAT_PROJECT_DEPLOYMENT_PKG_DOWNLOAD_URL=
+
+  TOMCAT_PROJECT_DEPLOYMENT_TYPE=
+
+  TOMCAT_PROJECT_CONF_DOWNLOAD_URL=
+
+  TOMCAT_PROJECT_DEPLOYMENT_PKG_LOCAL_PATH='/data/www/update/default'
+
+  TOMCAT_PROJECT_CONF_DOWNLOAD_NAME=
+
+  TOMCAT_PROJECT_DEPLOYMENT_PKG_MD5CODE=
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi
+
+  SERVER_INTERNAL_IP=`acqInternalIp`
+
+  # 加载PROMETHEUS配置
+  loadConf prometheus.conf ;
+
+  # 加载TOMCAT配置
+  loadConf tomcat_setenv.conf ;
+}
+
+function doParam(){
+  # 处理参数
+  local param=
+  [ $# == 0 ] && return ;
+  for param in "$@" ; do
+      local paramName=`echo ${param} | awk -F'=' '{print $1}'`
+      local paramValue=`echo ${param} | awk -F'=' '{print $NF}'`
+      case "${paramName}" in
+          -tomcat.service.restart)
+              TOMCAT_SERVICE_RESTART=${paramValue} ;;
+          -tomcat.app.backup)
+              BACKUP_WAR=${paramValue} ;;
+          -tomcat.del.logs)
+              DEL_LOGS=${paramValue} ;;
+          -tomcat.app.name)
+              TOMCAT_APP_NAME=${paramValue} ;;
+          -tomcat.project.deployment.pkg.path)
+              TOMCAT_PROJECT_DEPLOYMENT_PKG_PATH=${paramValue} ;;
+          -tomcat.project.deployment.pkg.download.url)
+              TOMCAT_PROJECT_DEPLOYMENT_PKG_DOWNLOAD_URL=${paramValue} ;;
+          -tomcat.project.deployment.pkg.local.path)
+              TOMCAT_PROJECT_DEPLOYMENT_PKG_LOCAL_PATH=${paramValue} ;;
+          -tomcat.project.deployment.pkg.md5code)
+              TOMCAT_PROJECT_DEPLOYMENT_PKG_MD5CODE=${paramValue} ;;
+          -tomcat.project.deployment.type)
+              TOMCAT_PROJECT_DEPLOYMENT_TYPE=${paramValue} ;;
+          -tomcat.project.conf.download.url)
+              TOMCAT_PROJECT_CONF_DOWNLOAD_URL=${paramValue} ;;
+          -tomcat.project.conf.download.name)
+              TOMCAT_PROJECT_CONF_DOWNLOAD_NAME=${paramValue} ;;
+          -h|-help)
+              prometheus_help $(basename $0) 
+              exit 0 ;;    
+      esac
+  done
+}
+
+function doCheck(){
+  # 校验tomcat app名称
+  if [ ".${TOMCAT_APP_NAME}" == "." ] ; then
+     echoPlus 31 "deployment app name not found" ;
+     exit 1 ;
+  fi
+  if [[ "${TOMCAT_APP_NAME_OPT[@]/$TOMCAT_APP_NAME/}" == "${TOMCAT_APP_NAME_OPT[@]}" ]] ; then
+     echoPlus 31 "deployment app name not in tomcat_setenv.conf" ;
+     exit 1 ;
+  fi  
+
+  # 检查是否删除日志
+  if [ ".${DEL_LOGS}" == ".true" ] ; then
+     # 如果要删除日志，则重启服务
+     TOMCAT_SERVICE_RESTART=true
+  fi   
+  # 检查升级文件是否存在
+  doCheck_pkg ;
+  # 检查升级类型
+  doCheck_deployment_type ;
+  # 检查配置文件
+  doCheck_conf ;
+}
+
+function doCheck_pkg(){
+  # 检查升级文件是否存在
+  # local updateFile=`acqUpdateFile ${tomcatAppName} ${updatePath} ${updateType}`
+  if [ ".${TOMCAT_PROJECT_DEPLOYMENT_PKG_PATH}" == "." ] || [ ! -f "${TOMCAT_PROJECT_DEPLOYMENT_PKG_PATH}" ] ; then
+     if [ ".${TOMCAT_PROJECT_DEPLOYMENT_PKG_DOWNLOAD_URL}" == "." ] ; then
+        echoPlus 31 "${TOMCAT_PROJECT_DEPLOYMENT_PKG_PATH} package not found" ;
+        deploy_failure ;
+     else
+        execWget ${TOMCAT_PROJECT_DEPLOYMENT_PKG_DOWNLOAD_URL} ${TOMCAT_PROJECT_DEPLOYMENT_PKG_LOCAL_PATH}/ ${TOMCAT_PROJECT_DEPLOYMENT_PKG_MD5CODE} ;
+        TOMCAT_PROJECT_DEPLOYMENT_PKG_PATH="${TOMCAT_PROJECT_DEPLOYMENT_PKG_LOCAL_PATH}/`basename ${TOMCAT_PROJECT_DEPLOYMENT_PKG_DOWNLOAD_URL}`"
+     fi
+  fi
+  # 检查包的md5码
+  if [ ".${TOMCAT_PROJECT_DEPLOYMENT_PKG_MD5CODE}" != "." ] ; then
+     local eq=`checkFileMd5code ${TOMCAT_PROJECT_DEPLOYMENT_PKG_PATH} ${TOMCAT_PROJECT_DEPLOYMENT_PKG_MD5CODE}`
+     [ ".${eq}" == ".0" ] && echoPlus 31 "md5code checksum failure" && deploy_failure ;
+  fi
+  # 检查升级包是否完整
+  if [ "`unzip -T ${TOMCAT_PROJECT_DEPLOYMENT_PKG_PATH} | grep -c "Updated time stamp for"`" = "1" ] ; then
+     # 升级包正常
+     echoPlus 32 "${TOMCAT_PROJECT_DEPLOYMENT_PKG_PATH} package check ok" ;
+  else
+     # 升级包破损
+     echoPlus 31 "${TOMCAT_PROJECT_DEPLOYMENT_PKG_PATH} package is damaged" ;
+     deploy_failure ;
+  fi
+}
+
+function doCheck_deployment_type(){
+  # 校验部署类型
+  if [ ".${TOMCAT_PROJECT_DEPLOYMENT_TYPE}" == "." ] ; then
+     local pkgType=`echo ${TOMCAT_PROJECT_DEPLOYMENT_PKG_PATH} | awk -F. '{print $NF}'`
+     case "${pkgType}" in
+          war)
+             TOMCAT_PROJECT_DEPLOYMENT_TYPE='full' ;;
+          zip)
+             TOMCAT_PROJECT_DEPLOYMENT_TYPE='diff' ;;
+          *)
+             echoPlus 31 "deployment pkg type error" ;;
+     esac
+  else
+     case "${TOMCAT_PROJECT_DEPLOYMENT_TYPE}" in
+          full|diff)
+             echoPlus 32 "deployment type check ok" ;;
+          *)
+             echoPlus 31 "deployment type error" ;
+             deploy_failure ;;
+     esac  
+  fi   
+}
+
+function doCheck_conf(){
+  # 检查配置文件
+  if [ ".${TOMCAT_PROJECT_CONF_DOWNLOAD_URL}" != "." ] && [ ".${TOMCAT_PROJECT_CONF_DOWNLOAD_NAME}" != "." ]  ; then
+     IFS=$':'
+     for confFile in ${TOMCAT_PROJECT_CONF_DOWNLOAD_NAME} ; do
+         echo "confFile = $confFile"
+         local ss=${TOMCAT_PROJECT_CONF_DOWNLOAD_URL:((${#TOMCAT_PROJECT_CONF_DOWNLOAD_URL} - 1))}
+         if [ "${ss}" == "/" ] ; then
+            local downloadPath=${TOMCAT_PROJECT_CONF_DOWNLOAD_URL}${confFile}
+         else
+            local downloadPath=${TOMCAT_PROJECT_CONF_DOWNLOAD_URL}/${confFile}
+         fi
+         #local tomcatHttpPort=`acqTomcatHttpPort ${TOMCAT_APP_NAME}"`
+         local tomcatAppConfPath="/data/www/conf/apps/${TOMCAT_APP_NAME}/"
+         echo "execWget ${downloadPath} ${tomcatAppConfPath} "
+         IFS=$'\n\t\ '
+         execWget ${downloadPath} ${tomcatAppConfPath} ;
+     done
+  fi
+}
+
+function tomcatService(){
+  # tomcat服务控制
+  # @param app name     (default)
+  # @param action       (stop)
+  # echo -e $1 "service $2 [" "\e[31;5mOK\e[0m" "]"
+  local appName=$1
+  local action=$2
+  if [ ".${TOMCAT_SERVICE_RESTART}" == ".true" ] ; then
+     #tomcatServiceControlOne ${appName} ${action} ;
+     ${PROMETHEUS_HOME}/bin/tomcat ${appName} ${action} ;
+  fi
+}
+
+function doUpdate(){
+  # 升级
+  local appName=${TOMCAT_APP_NAME}
+  local updateFile=${TOMCAT_PROJECT_DEPLOYMENT_PKG_PATH}
+  local updateType=${TOMCAT_PROJECT_DEPLOYMENT_TYPE}
+  local appWebPath=`acqAppWebappsPath ${appName}`
+  echoPlus 32 "${appName} Upgrade start" ;
+  execRmDir "/data/www/update/update-tmp" ;
+  execMkdir "/data/www/update/update-tmp" ;
+  # 停止服务
+  # tomcatService ${appName} stop ;
+  tomcatService ${appName} kill ;
+  # 升级
+  echoPlus 32 "Unziping.... ${updateFile}" ;
+  unzip "${updateFile}" -d "/data/www/update/update-tmp/${appWebPath}" >/dev/null 2>&1
+  case "${updateType}" in
+    diff)
+       #增量升级去除ROOT目录下的配置文件
+       echoPlus 32 "updateing(diff)...."
+       unlinkAppConf ${appName} ;;
+    full)
+       echoPlus 32 "updateing(full)...." ;
+       execRmDir "/data/www/ROOT/${appName}/${appWebPath}" ;
+       ;;
+  esac
+  execCp "/data/www/update/update-tmp/${appWebPath}" "/data/www/ROOT/${appName}/" ;
+  #创建配置文件
+  linkAppConf ${appName} ;
+  #创建自定义配置文件
+  linkAppConfigConf ${appName} ;
+  #修改权限
+  appPermissionsConfiguration ${appName} ;
+  #清理临时文件
+  clearFile ${appName} ;
+
+  echoPlus 32 "${appName} Upgrade is complete" ;
+  #启动服务
+  tomcatService ${appName} start ;
+
+}
+
+function deploy_failure(){
+     echoPlus error "Deploy Failure : project=${TOMCAT_APP_NAME} ip=${SERVER_INTERNAL_IP}"
+     exit 1
+}
+
+config ;
+doParam $@ ;
+doCheck ;
+backup ${TOMCAT_APP_NAME} before ;
+doUpdate ;
+backup ${TOMCAT_APP_NAME} after ;
+echoPlus info "Deploy Success : project=${TOMCAT_APP_NAME} ip=${SERVER_INTERNAL_IP}"
+exit 0
+
+

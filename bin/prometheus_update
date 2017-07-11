@@ -1,0 +1,258 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  prometheus update
+#   AUTHOR: Liang Jian
+#   DATE: 2014-10-10
+#   QQ:  80327044
+#===============================================================================
+
+# ./prometheus_update -x=http://res.swomc.net/software/PROMETHEUS/etc/prometheus_update.conf -i
+
+function config(){
+  #-------配置项--------------------------
+  . /etc/profile
+  
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  DEBUG=true
+
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+
+  PROMETHEUS_RES_OPT_CNT=
+  PROMETHEUS_CONF_OPT_CNT=
+  # 是否全新安装
+  PROMETHEUS_INSTALL=false
+}
+
+function doParam(){
+  local param=
+  [ $# == 0 ] && return ;
+  for param in "$@" ; do
+      local paramName=`echo ${param} | awk -F'=' '{print $1}'`
+      local paramValue=`echo ${param} | awk -F'=' '{print $NF}'`
+      case "${paramName}" in
+          -x)
+              PROMETHEUS_UPDATE_CONF_DOWNLOAD_URL=${paramValue} ;;
+          -i|-install)
+              # 全新安装
+              PROMETHEUS_INSTALL=true
+              #test ".${paramValue}" != . && PROMETHEUS_HOME=${paramValue} ;;
+      esac
+  done
+}
+
+function init_prometheus_update(){
+  test ".${PROMETHEUS_UPDATE_CONF_DOWNLOAD_URL}" = . && loadConf prometheus.conf ;
+}
+
+function loadUpdateFile(){
+  # 载入配置
+  local fileName=`basename ${PROMETHEUS_UPDATE_CONF_DOWNLOAD_URL}`
+  if [ ".${PROMETHEUS_UPDATE_CONF_DOWNLOAD_URL}" == "." ] ; then
+     echoPlus error "PROMETHEUS_UPDATE_CONF_DOWNLOAD_URL not found" ;
+  fi  
+  execWget ${PROMETHEUS_UPDATE_CONF_DOWNLOAD_URL} ${PROMETHEUS_HOME}/etc/ ;
+  . ${PROMETHEUS_HOME}/etc/${fileName}
+  PROMETHEUS_RES_OPT_CNT=$(( ${#PROMETHEUS_RES_OPT[*]} / 2 ))
+}
+
+function doUpdate(){
+  local i index res md5code localPath
+  for((i=0;i<${PROMETHEUS_RES_OPT_CNT};i++)) ; do
+     index=$(( $i * 2 ))
+     res=${PROMETHEUS_RES_OPT[${index}]}
+     md5code=`acqResOptValue ${res} md5code`
+     localPath=`dirname ${PROMETHEUS_HOME}/${res}`
+     echoPlus info "update file ${PROMETHEUS_DOWNLOAD_URL}/${res} ${localPath}/"
+     if [ ".${md5code}" == "." ] || [ ".${md5code}" == ".-" ] ; then
+        execWget ${PROMETHEUS_DOWNLOAD_URL}/${res} ${localPath}/ ;
+     else
+        execWget ${PROMETHEUS_DOWNLOAD_URL}/${res} ${localPath}/ ${md5code} ;  
+     fi
+  done
+}
+
+function doUpdate_conf(){
+  PROMETHEUS_CONF_OPT_CNT=${#PROMETHEUS_CONF_OPT[*]}
+  local i res localPath localFile
+  for((i=0;i<${PROMETHEUS_CONF_OPT_CNT};i++)) ; do
+     res=${PROMETHEUS_CONF_OPT[${i}]}
+     localPath=`dirname ${PROMETHEUS_HOME}/${res}`
+     localFile=${PROMETHEUS_HOME}/${res}
+     [ -f "${localFile}" ] && continue ;
+     echoPlus info "update file ${PROMETHEUS_DOWNLOAD_URL}/${res} ${localPath}/"
+     execWget ${PROMETHEUS_DOWNLOAD_URL}/${res} ${localPath}/
+  done
+}
+
+function chgPermissions(){
+  find ${PROMETHEUS_HOME}/bin -type f -exec chmod +x {} \;
+  find ${PROMETHEUS_HOME}/service -type f -exec chmod +x {} \;
+  find ${PROMETHEUS_HOME}/statistic -type f -exec chmod +x {} \;
+  find ${PROMETHEUS_HOME}/tools -type f -exec chmod +x {} \;
+}
+
+function acqResOptValue(){
+  local res=$1
+  local returnType=$2
+  local index=`acqIndexByRes ${res}`
+  local value=`acqResOpt ${returnType} ${index}`
+  echo ${value}
+}
+
+function acqIndexByRes(){
+  local name=$1
+  local i
+  for((i=0;i<${PROMETHEUS_RES_OPT_CNT};i++));do
+     if [ ${name} == `acqResOpt res $i` ] ; then
+        echo $i ;
+        break ;
+     fi
+  done
+}
+
+function acqResOpt(){
+  # 提取 PROMETHEUS_RES_OPT 中的矩阵数据
+  # @param name|actions|svnPath|localPath|svnAccount
+  # @param index
+  # return value
+  local getType=$1
+  local index=$2
+  IFS=$'\n\t'
+  case "${getType}" in
+       res)
+          index=$(( ${index} * 2 ))     ;;
+       md5code)  
+          index=$(( ${index} * 2 + 1 )) ;;
+  esac
+  echo ${PROMETHEUS_RES_OPT[${index}]}
+}
+
+function loadConf(){
+  # 加载配置
+  local confName=$1
+  if [ -r "${PROMETHEUS_HOME}/etc/${confName}" ]; then
+     . ${PROMETHEUS_HOME}/etc/${confName}
+  else
+     echoPlus error "${PROMETHEUS_HOME}/etc/${confName} not found"
+     exit 1 ;
+  fi
+}
+
+function doInstall(){
+  test ".${PROMETHEUS_INSTALL}" != .true && return ;
+  set_prometheus_home ;
+  link_service ;
+}
+
+function link_service(){
+  # 设置服务链接
+  cd /etc/init.d
+  ln -sf ${PROMETHEUS_HOME}/bin/tomcat .
+  ln -sf ${PROMETHEUS_HOME}/bin/system/auto_set_eth autoseteth
+}
+
+function set_prometheus_home(){
+  # 设置环境变量
+  local isSet=`grep -c 'PROMETHEUS_HOME=' /etc/profile`
+  [ "${isSet}" != "0" ] && return ;
+cat << EOF >> /etc/profile
+# PROMETHEUS
+PROMETHEUS_HOME=${PROMETHEUS_HOME}
+export PROMETHEUS_HOME
+PATH=$PATH:$PROMETHEUS_HOME/bin:$PROMETHEUS_HOME/bin/system
+export PATH
+# PROMETHEUS
+EOF
+source /etc/profile
+}
+
+function echoPlus(){
+  # 增强显示
+  # @param color  (31|91 红  32|92绿  33|93黄 34|94蓝 35|95紫 36|96天蓝)
+  # @param content
+  local colorCode=$1
+  local content=$2
+  case ${colorCode} in
+    31|91|error|err)
+            colorCode=31
+            debug [ERROR] ${content} ;;
+    32|92|info)
+            colorCode=32 
+            debug [INFO] ${content} ;; 
+  esac
+  IFS=$'\t\n'
+  echo -e "\e[${colorCode}m${content}\e[0m"
+}
+
+function debug(){
+  # 调试用写入debug日志
+  local logLevel=$1
+  local logTime=$(date +%Y-%m-%d\ %T)
+  [ ".${DEBUG_FILE}" == "." ] && return ;
+  mkdir -p `dirname ${DEBUG_FILE}` ;
+  if [ ".${DEBUG}" == ".true" ]; then
+     echo "${logTime} $@" >> ${DEBUG_FILE}
+  fi
+}
+
+function execMkdir(){
+  # 创建目录
+  # @Param dir
+  local dir=$1
+  [ -d ${dir} ] || mkdir -p ${dir} >/dev/null 2>&1
+}
+
+function execWget(){
+  # 下载软件
+  # @param url
+  # @param download path
+  # @param md5
+  local downloadUrl=$1
+  local downloadPath=$2
+  local md5=$3
+  local fileName=${downloadPath}`basename ${downloadUrl}`
+  # mkdir -p ${downloadPath} >/dev/null 2>&1
+  if [ ".${md5}" == "." ] ; then
+     execWget_ ${downloadUrl} ${downloadPath} ;
+  else
+     # echoPlus 32 "MD5Code: ${md5}" ;
+     if [ -f "${fileName}" ] ; then
+        local isMd5=`md5sum ${fileName} | grep -c ${md5}`
+         # echoPlus 31 "check Md5 code :"`md5sum ${fileName}`
+        [ ".${isMd5}" == ".0" ] && execWget_ ${downloadUrl} ${downloadPath} ;
+     else
+        execWget_ ${downloadUrl} ${downloadPath} ;
+     fi
+  fi
+}
+
+function execWget_(){
+  # 下载软件
+  # @param url
+  # @param download path
+  local downloadUrl=$1
+  local downloadPath=$2
+  local fileName=${downloadPath}`basename ${downloadUrl}`
+  execMkdir ${downloadPath} ;
+  [ -f ${fileName} ] && rm -f ${fileName}
+  wget ${downloadUrl} -P ${downloadPath} 
+  if [ $? -eq 0 ]; then
+     echoPlus 32 "Download ${downloadUrl} to ${downloadPath}" ;
+  else 
+     echoPlus 31 "Failed to download : ${downloadUrl}" ;
+     exit 1 ;
+  fi
+}
+
+config ;
+doParam $@ ;
+init_prometheus_update
+loadUpdateFile ;
+doUpdate ;
+doUpdate_conf ;
+chgPermissions ;
+doInstall ;
+
+

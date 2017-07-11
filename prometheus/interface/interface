@@ -1,0 +1,99 @@
+#!/bin/bash
+
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  interface
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+
+function config(){
+
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echoPlus error "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi      
+
+  # 加载PROMETHEUS配置
+  loadConf prometheus.conf ;
+
+  INTERFACE_OPT_CNT=$(( ${#INTERFACE_OPT[*]} / 2 ))
+}
+
+function doParam(){
+  local cmdName=$1
+  local cmdPath=`acqInterfaceValue ${cmdName} cmdPath`
+  if [ ".${cmdPath}" == "." ] ; then
+     echoPlus error "interface ${cmdName} cmdPath not found" ;
+     exit 1 ;
+  fi
+  local cmd=${cmdPath}/${cmdName}
+
+  if [ -x ${cmd} ] ; then
+     securityCheck $@ ;
+     eval ${cmd} $@ ;
+  else
+     echoPlus error "${cmd} not found" ;
+  fi  
+}
+
+function securityCheck(){
+  # 安全检查 命令中不允许出现 | ;
+  # 避免注入，引发安全漏洞
+  local param cnt
+  IFS=$'\ '
+  for param in $@ ; do
+      cnt=`echo ${param} | grep -c '[;|]'`
+      if [ "${cnt}" != "0" ] ; then
+         echoPlus error "special character parameters, stop execution !" ;
+         exit 1 ;
+      fi   
+  done 
+}
+
+function acqInterfaceValue(){
+  local name=$1
+  local returnType=$2
+  local index=`acqIndexByName ${name}`
+  local value=`acqInterfaceOpt ${returnType} ${index}`
+  echo ${value}
+}
+
+function acqIndexByName(){
+  local name=$1
+  local i
+  for((i=0;i<${INTERFACE_OPT_CNT};i++));do
+     if [ ${name} == `acqInterfaceOpt name $i` ] ; then
+        echo $i ;
+        break ;
+     fi
+  done
+}
+
+function acqInterfaceOpt(){
+  # 提取 INTERFACE_OPT 中的矩阵数据
+  # @param cmdName|cmdPath
+  # @param index
+  # return cmdName | cmdPath
+  local getType=$1
+  local index=$2
+  [ ".${index}" == "." ] && exit 1 ;
+  IFS=$'\n\t'
+  case "${getType}" in
+       cmdName)
+          index=$(( ${index} * 2 ))     ;;
+       cmdPath)  
+          index=$(( ${index} * 2 + 1 )) ;;
+  esac
+  echo ${INTERFACE_OPT[${index}]}
+}
+
+config ;
+doParam $@ ;
+exit 0 ;

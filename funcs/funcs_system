@@ -1,0 +1,217 @@
+#!/bin/bash
+#PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
+#export PATH
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  Prometheus funcs_system
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+
+function acqInternalIp(){
+  # 获取内网ip 无参数则从eth0-eth3取值
+  # @param eth0
+  # return VALUE 192.168.10.10
+  local networkInterface=$1
+  local ip ethX
+  if [ ".${networkInterface}" == "." ] ; then
+     for ethNum in `seq 0 3` ; do
+         ethX="eth${ethNum}"
+         ip=`acqInternalIp ${ethX}`
+         if [ ".${ip}" != "." ] ; then
+            echo ${ip}
+            return 0 ;
+         fi
+     done
+  else
+     ip=`ifconfig ${networkInterface} 2>/dev/null | awk '/inet addr/ {print $2}' | cut -f2 -d ":"`
+     test ".${ip}" = . && ip=`ifconfig ${networkInterface} 2>/dev/null | awk '/inet/ {print $2}' | cut -f2 -d ":"`
+     echo ${ip}
+     #checkValueError ;
+  fi
+}
+
+function acqPublicIp(){
+  # 获取公网ip
+  # return VALUE 115.222.111.101
+  # 备用代码，国外的站点速度有点慢
+  # curl ifconfig.me 2>/dev/null
+  local publicIp
+  publicIp=`curl --connect-timeout 3 -m 2 http://members.3322.org/dyndns/getip 2>/dev/null`
+  if [ $? -ne 0 ] ; then 
+     publicIp="unknown"
+  fi
+  echo ${publicIp}
+}
+
+function acqEthAddress(){
+  # 获取 /etc/udev/rules.d/70-persistent-net.rules 中的mac地址
+  # @Param file
+  # @Param ehtX
+  local file=$1
+  local ethX=$2
+  local value=`grep NAME=\"${ethX}\" ${file} | awk -F, '{print $4}' | awk -F== '{print $NF}' | tr -d \"`
+  echo ${value}
+}
+
+function acqEthAddressLine(){
+  # 获取 /etc/udev/rules.d/70-persistent-net.rules 中的mac地址
+  # @Param file
+  # @Param ehtX
+  local file=$1
+  local ethX=$2
+  local value=`grep NAME=\"${ethX}\" -n ${file}`
+  if [ ".${value}" == "." ] ; then
+     exit 1 ;
+  else
+     local line=`awk -F: '{print $1}' <<< ${value}`
+  fi
+  echo ${line}
+}
+
+function acqHostName(){
+  # 获取主机名
+  # return VALUE my_server
+  hostname
+  checkValueError ;
+}
+
+function acqCpuinfo(){
+  local cpuinfo=`grep "model name" /proc/cpuinfo | head -n1 | awk -F': ' '{print $NF}' | tr -d ' '`
+  local coreCnt=`grep "processor" /proc/cpuinfo | wc -l`
+  echo "${cpuinfo} * ${coreCnt} core"
+}
+
+function acqUser(){
+  # 获取当前用户
+  # return VALUE guest
+  users | awk '{print $1}'
+  checkValueError ;
+}
+
+function acqGroup(){
+  # 获取当前用户组
+  # return VALUE group
+  groups
+  checkValueError ;
+}
+
+function acqUptime(){
+  # 获取开机时间
+  # return VALUE 2014-10-07 18:48:26
+  date -d "$(awk -F. '{print $1}' /proc/uptime) second ago" +"%Y-%m-%d,%H:%M:%S"
+  checkValueError ;
+}
+
+function acqRuntime(){
+  # 获取系统运行时长
+  cat /proc/uptime | awk -F. '{run_days=$1 / 86400;run_hour=($1 % 86400)/3600;run_minute=($1 % 3600)/60;run_second=$1 % 60;printf("%ddays,%dhour,%dminute,%dsecond",run_days,run_hour,run_minute,run_second)}'
+  checkValueError ;
+}
+
+function acqOS(){
+  # 取OS信息
+  cat /etc/redhat-release
+  checkValueError ;
+}
+
+function acqKernel(){
+  # 取内核信息
+  awk '{print $3}' /proc/version
+  checkValueError ;
+}
+
+function acqMem(){
+  # 取内存使用信息
+  # 要按GB显示用下面代码
+  # VALUE=`free |awk -F' '+ '$1 ~ /Mem:/ { used=$3 / 1048576;total=$2 / 1048576;printf("%d(GB)used/%d(GB)tolal",used,total)}'`
+  free | awk -F' '+ '$1 ~ /Mem:/ { used=$3 / 1024;total=$2 / 1024;printf("%d(MB)used/%d(MB)tolal",used,total)}'
+  checkValueError ;
+}
+
+function acqVersion(){
+  # @Param serviceName
+  # return version
+  local serviceName=$1
+  [ "${serviceName}" == "php-fpm" ] && serviceName=php
+  if eval type acqVersion_${serviceName} > /dev/null 2>&1 ; then
+     eval acqVersion_${serviceName}
+  else 
+     echo "unknown"
+  fi
+}
+
+function acqVersion_tomcat(){
+  local tomcatName version versions jdkVersion
+  for tomcatName in ${TOMCAT_APP_NAME_OPT[*]} ; do
+      local tomcatHttpPort=`acqTomcatHttpPort ${tomcatName}`
+      version=`acqVersion_tomcat_ ${tomcatName}`
+      versions="${versions} ${tomcatHttpPort}/${tomcatName}:${version}" 
+  done
+  jdkVersion="jdk`acqVersion_java`"
+  echo ${versions}" "${jdkVersion}
+}
+
+function acqVersion_tomcat_(){
+  local tomcatName=$1
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatName}`
+  local version=`tomcatVersion ${tomcatName} 2>&1|grep 'Server number' |awk '{print $NF}'`
+  if [ ".${version}" == "." ] ; then
+     echo "unknown"
+  else    
+     echo ${version}
+  fi
+}
+
+function acqVersion_java(){
+  ${JAVA_HOME}/bin/java -version 2>&1 | grep "java version" | awk -F'"' '{print $(NF-1)}'
+}
+
+function acqVersion_nginx(){
+  if [ -x /usr/local/openresty/nginx/sbin/nginx ] ; then
+      /usr/local/openresty/nginx/sbin/nginx -v 2>&1 | awk -F': ' '{print $2}'
+  elif [ -x /usr/local/nginx/sbin/nginx  ] ; then
+      /usr/local/nginx/sbin/nginx -v 2>&1 | awk -F': ' '{print $2}'
+  else  
+      echo "unknown"
+  fi 
+}
+
+function acqVersion_redis(){
+  if [ -x /usr/local/redis/bin/redis-server ] ; then
+     /usr/local/redis/bin/redis-server -v | awk -F'[=| ]' '{print $4}'
+  else 
+     echo "unknown"
+  fi   
+}
+
+function acqVersion_memcached(){
+  local version
+  installationComponent nc nc ;
+  version=`nc 127.0.0.1 11211 <<< stats | grep version | awk '{print $NF}'`
+  if [ ".${version}" == "." ] ; then
+     echo "After running the show"
+  else 
+     echo ${version%?}
+  fi  
+}
+
+function acqVersion_zabbix_agentd(){
+  if [ -x /usr/local/zabbix/sbin/zabbix_agent ] ; then 
+      /usr/local/zabbix/sbin/zabbix_agent -V | head -1
+  else 
+      echo "unknown"
+  fi
+}
+
+function acqVersion_php(){
+  if [ -x /usr/local/php/sbin/php-fpm ] ; then
+     /usr/local/php/sbin/php-fpm -v | head -1 | awk '{print $2}'
+  else
+     echo "unknown"
+  fi
+}
+
+function acqVersion_pureftpd(){
+  echo 1.0.36
+}

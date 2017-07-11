@@ -1,0 +1,115 @@
+#!/bin/bash
+
+#pwd
+#wget http://res.51xianqu.net/software/PROMETHEUS/tools/ci-tools-01.sh
+#chmod +x ./ci-tools-01.sh
+#./ci-tools-01.sh `pwd`
+
+# 加载函数
+test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+   . ${PROMETHEUS_HOME}/funcs/funcs
+else
+   echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+   exit 1 ;
+fi
+
+function create_exe4j_config(){
+# tomcat.log4j.properties 配置文件摸板
+# @param tomcatAppName  project
+# @param tomcatName     tomcat6
+local target_dir=$1
+local pos_jar_name=$2  # pos-ui-daily-1.0.0-jar-with-dependencies.jar  pos-ui-gray-1.0.5-jar-with-dependencies.jar  pos-ui-online-1.0.1-jar-with-dependencies.jar
+local exe_name=$3  # name="1.0.0_pos"
+
+cat << EOF > ${target_dir}/exe4j.config
+<?xml version="1.0" encoding="UTF-8"?>
+<exe4j version="5.1" transformSequenceNumber="2">
+  <directoryPresets config="${target_dir}" />
+  <application name="POS" distributionSourceDir="${target_dir}">
+    <languages>
+      <principalLanguage id="en" customLocalizationFile="" />
+    </languages>
+  </application>
+  <executable name="${exe_name}" type="2" iconSet="true" iconFile="/data/www/install/mark/128X128.ico" executableDir="." redirectStderr="true" 
+              stderrFile="error.log" stderrMode="overwrite" redirectStdout="false" stdoutFile="output.log" stdoutMode="overwrite" 
+              failOnStderrOutput="true" executableMode="1" changeWorkingDirectory="true" workingDirectory="." singleInstance="true" 
+              serviceStartType="2" serviceDependencies="" serviceDescription="" jreLocation="" executionLevel="asInvoker" 
+              checkConsoleParameter="false" globalSingleInstance="false" singleInstanceActivate="true" dpiAware="false" amd64="false">
+    <messageSet />
+    <versionInfo include="false" fileVersion="" fileDescription="" legalCopyright="" internalName="" productName="" companyName="" productVersion="" />
+  </executable>
+  <splashScreen show="false" width="0" height="0" bitmapFile="" windowsNative="true" textOverlay="false">
+    <text>
+      <statusLine x="20" y="20" text="" fontSize="8" fontColor="0,0,0" bold="false" />
+      <versionLine x="20" y="40" text="version %VERSION%" fontSize="8" fontColor="0,0,0" bold="false" />
+    </text>
+  </splashScreen>
+  <java mainClass="com.shandiangou.pos.ui.Pos" vmParameters="-Dexe.path=\${EXE4J_EXEDIR}" arguments="" allowVMPassthroughParameters="true" 
+        preferredVM="client" bundleRuntime="true" minVersion="1.7" maxVersion="" allowBetaVM="false" jdkOnly="false">
+    <searchSequence>
+      <directory location="./jre" />
+    </searchSequence>
+    <classPath>
+      <archive location="${target_dir}/${pos_jar_name} " failOnError="false" />
+    </classPath>
+    <nativeLibraryDirectories />
+    <vmOptions />
+  </java>
+  <includedFiles />
+  <unextractableFiles />
+</exe4j>
+EOF
+}
+
+function acq_pos_jar_version(){
+# pos-ui-daily-1.0.0-jar-with-dependencies.jar  pos-ui-gray-1.0.5-jar-with-dependencies.jar  pos-ui-online-1.0.1-jar-with-dependencies.jar
+  local pos_jar_name=`acq_pos_jar_name`
+  local pos_jar_version=`echo ${pos_jar_name} | awk -F'-' '{print $4}'`
+  echo ${pos_jar_version}
+}
+
+function acq_pos_jar_name(){
+  local target_dir=${POS_TARGET}
+
+  local pos_jar_name=`cd ${target_dir} ;ls pos-ui-*-with-dependencies.jar` # pos-ui-daily-1.0.0-jar-with-dependencies.jar
+  echo ${pos_jar_name}
+}
+
+DIR=$1
+echo "DIR="$DIR
+POS_TARGET=${DIR}/pos-ui/target
+echo "POS_TARGET="$POS_TARGET
+
+# 创建配置文件
+create_exe4j_config ${POS_TARGET} `acq_pos_jar_name`  `acq_pos_jar_version`"_pos" ;
+
+/opt/exe4j/bin/exe4jc ${POS_TARGET}/exe4j.config ;
+
+md5=`md5sum ${POS_TARGET}/*.exe`
+echoPlus info `ls ${POS_TARGET}/*.exe`
+echoPlus info $md5
+
+#file=
+#version=
+#newFile=
+#newVerCode=0
+#for file in `ls $dir/upgrade/` ; do
+#    version=`echo $file | awk '{print $NF}' | awk -F'_' '{print $1}' | awk -F\.  '{print $1*10000+$2*100+$3}'`
+#    if [ $version -gt $newVerCode ] ; then
+#       newVerCode=$version
+#       newFile=$file
+#    fi
+#done
+#cd $dir/upgrade/
+#rm -f `ls $dir/upgrade/ | grep -v "$newFile"`
+
+#md5=`md5sum $dir/upgrade/*`
+
+#echoPlus info "posexe file md5 code:"
+#echoPlus info $md5
+
+
+
+
+

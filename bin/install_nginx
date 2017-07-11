@@ -1,0 +1,191 @@
+#!/bin/bash
+
+function config(){
+  PACKAGE_DIR=${PROMETHEUS_HOME}/pkg/nginx    # 源码存放路径，无需编译
+  SOURCE_DIR=${PROMETHEUS_HOME}/pkg/nginx    # 源码存放路径，编译使用
+  INSTALL_DIR=/usr/local    # 源码编译生成软件包的路径
+  TPM_DIR=/data/www/temp    # 临时目录
+
+  # 定义下载源码包的名称和版本
+  # OPENSSL_VERSION=openssl-1.0.2g.tar.gz
+  # ZLIB_VERSION=zlib-1.2.8.tar.gz
+  # PCRE_VERSION=pcre-8.38.tar.gz
+  # LUAJIT_VERSION=LuaJIT-2.0.4.tar.gz
+  # NGINX_VERSION=nginx-1.8.1.tar.gz
+  # NGINX_UPSTREAM_CHECK_VERSION=nginx_upstream_check_module-master.zip
+  # LUA_NGINX_VERSION=lua-nginx-module-master.zip
+  # ECHO_NGINX_VERSION=echo-nginx-module-master.zip
+  # NGX_DEVEL_KIT=ngx_devel_kit-master.zip
+
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi
+
+  # 加载网络配置项
+  load_res ;
+}
+
+function load_res(){
+  # 载入配置
+  test ".${NGINX_RES}" = . && NGINX_RES="http://res.51xianqu.net/software/PROMETHEUS/etc/nginx_res.conf"
+  loadUrlResFile ${NGINX_RES} ;
+}
+
+function install_init(){
+  # 安装依赖
+  echoPlus info "nginx install init..."
+  execYum gcc gcc-c++ make openssl openssl-devel glibc glibc-devel zlib zlib-devel pcre pcre-devel lua-devel unzip wget 
+}
+
+function install_download(){
+  # 下载源码并用md5校验
+  execWget http://res.51xianqu.net/software/nginx/${OPENSSL_VERSION} ${PROMETHEUS_HOME}/pkg/nginx/ ${OPENSSL_PKG_MD5}
+  execWget http://res.51xianqu.net/software/nginx/${ZLIB_VERSION} ${PROMETHEUS_HOME}/pkg/nginx/ ${ZLIB_PKG_MD5}
+  execWget http://res.51xianqu.net/software/nginx/${PCRE_VERSION} ${PROMETHEUS_HOME}/pkg/nginx/ ${PCRE_PKG_MD5}
+  execWget http://res.51xianqu.net/software/nginx/${LUAJIT_VERSION} ${PROMETHEUS_HOME}/pkg/nginx/ ${LUAJIT_PKG_MD5}
+  execWget http://res.51xianqu.net/software/nginx/${NGINX_VERSION} ${PROMETHEUS_HOME}/pkg/nginx/ ${NGINX_PKG_MD5}
+  execWget http://res.51xianqu.net/software/nginx/${NGINX_UPSTREAM_CHECK_VERSION} ${PROMETHEUS_HOME}/pkg/nginx/ ${NGINX_UPSTREAM_CHECK_PKG_MD5}
+  execWget http://res.51xianqu.net/software/nginx/${LUA_NGINX_VERSION} ${PROMETHEUS_HOME}/pkg/nginx/ ${LUA_NGINX_PKG_MD5}
+  execWget http://res.51xianqu.net/software/nginx/${ECHO_NGINX_VERSION} ${PROMETHEUS_HOME}/pkg/nginx/ ${ECHO_NGINX_PKG_MD5}
+  execWget http://res.51xianqu.net/software/nginx/${NGX_DEVEL_KIT} ${PROMETHEUS_HOME}/pkg/nginx/ ${NGX_DEVEL_KIT_PKG_MD5}
+}
+
+function install_unpack(){
+  # 解压源码
+  execUnpack ${PROMETHEUS_HOME}/pkg/nginx/${OPENSSL_VERSION}
+  execUnpack ${PROMETHEUS_HOME}/pkg/nginx/${ZLIB_VERSION}
+  execUnpack ${PROMETHEUS_HOME}/pkg/nginx/${PCRE_VERSION}
+  execUnpack ${PROMETHEUS_HOME}/pkg/nginx/${LUAJIT_VERSION}
+  execUnpack ${PROMETHEUS_HOME}/pkg/nginx/${NGINX_VERSION}
+  execUnpack ${PROMETHEUS_HOME}/pkg/nginx/${NGINX_UPSTREAM_CHECK_VERSION}
+  execUnpack ${PROMETHEUS_HOME}/pkg/nginx/${LUA_NGINX_VERSION}
+  execUnpack ${PROMETHEUS_HOME}/pkg/nginx/${ECHO_NGINX_VERSION}
+  execUnpack ${PROMETHEUS_HOME}/pkg/nginx/${NGX_DEVEL_KIT}
+}
+
+function do_install(){
+  do_install_luajit ;
+  do_install_nginx ;
+  do_install_service ; 
+}
+
+function do_install_luajit(){
+  # 编译安装luajit
+  local luajit_src_path=${SOURCE_DIR}/`acq_pkg_name $LUAJIT_VERSION`
+  local luajit_dest_path=${INSTALL_DIR}/`acq_pkg_name $LUAJIT_VERSION`
+
+  if [ ! -f ${luajit_dest_path}/bin/luajit ] ; then
+     rm ${INSTALL_DIR}/LuaJIT /usr/local/lib64/LuaJIT /lib64/libluajit-5.1.so.2
+     cd $luajit_src_path
+     # sed -i "s|/usr/local|/usr/local/$LUAJIT_VERSION|g" Makefile
+     make PREFIX=${luajit_dest_path} && make install PREFIX=$luajit_dest_path && ln -sv $luajit_dest_path ${INSTALL_DIR}/LuaJIT
+     # 判断luajit是否成功安装
+     checkError "`acq_pkg_name ${LUAJIT_VERSION}` install failed"
+     # 配置lib和include 
+     ln -sv ${INSTALL_DIR}/LuaJIT /usr/local/lib64
+     ln -sv ${INSTALL_DIR}/LuaJIT/lib/libluajit-5.1.so.2 /lib64/libluajit-5.1.so.2
+  else
+     echo `acq_pkg_name $LUAJIT_VERSION` is exist.
+  fi
+}
+
+function do_install_nginx(){
+  # 编译安装nginx
+  local nginx_src_path=${SOURCE_DIR}/`acq_pkg_name ${NGINX_VERSION}`
+  local nginx_dest_path=${INSTALL_DIR}/`acq_pkg_name ${NGINX_VERSION}`
+  local openssl_src_path=${PACKAGE_DIR}/`acq_pkg_name ${OPENSSL_VERSION}`
+  local zlib_src_path=${PACKAGE_DIR}/`acq_pkg_name ${ZLIB_VERSION}`
+  local pcre_src_path=${PACKAGE_DIR}/`acq_pkg_name ${PCRE_VERSION}`
+  local nginx_upstream_check_src_path=${PACKAGE_DIR}/`acq_pkg_name ${NGINX_UPSTREAM_CHECK_VERSION}`
+  #  local lua-nginx_src_path=${PACKAGE_DIR}/`acq_pkg_name ${LUA_NGINX_VERSION}`
+  #  local echo-nginx_src_path=${PACKAGE_DIR}/`acq_pkg_name ${ECHO_NGINX_VERSION}`
+  local ngx_devel_kit_src_path=${PACKAGE_DIR}/`acq_pkg_name ${NGX_DEVEL_KIT}`
+  export LUAJIT_LIB=${INSTALL_DIR}/LuaJIT/lib
+  export LUAJIT_INC=${INSTALL_DIR}/LuaJIT/include/luajit-2.0
+
+  if [ ! -f ${nginx_dest_path}/sbin/nginx ] ; then
+     # 杀死nginx进程
+     /etc/init.d/nginx stop
+     PID=$(netstat -tulnp | grep ":80\b" | grep -Po '(?<=\s)\d+(?=\/)')
+     sleep 5
+     (if [ -n "$PID" ]
+        then
+        kill -9 $PID
+     fi)
+     rm ${INSTALL_DIR}/nginx
+     cd ${nginx_src_path}
+     patch -t -p1 < ${nginx_upstream_check_src_path}/check_1.7.5+.patch
+     ./configure --prefix=${nginx_dest_path} --with-http_ssl_module --with-http_sub_module --with-http_stub_status_module --with-http_secure_link_module --with-http_stub_status_module --with-openssl=${openssl_src_path} --with-zlib=${zlib_src_path} --with-pcre=${pcre_src_path} --add-module=${nginx_upstream_check_src_path} --add-module=${PACKAGE_DIR}/lua-nginx-module-master --add-module=${PACKAGE_DIR}/echo-nginx-module-master --add-module=${ngx_devel_kit_src_path}
+     make && make install && ln -sv ${nginx_dest_path} ${INSTALL_DIR}/nginx
+     # 判断nginx是否成功安装
+     checkError "$NGINX_VERSION install failed" ;
+  else
+     echo `acq_pkg_name ${NGINX_VERSION}` is exist.
+  fi
+}
+
+function do_install_service(){
+  ln -sf /usr/local/prometheus/service/nginx /etc/init.d
+}
+
+function acq_pkg_name(){
+  local fileName=$1
+
+  # 判断压缩包的类型，去除压缩包的后缀，以获取软件包的名称和版本
+  if [[ "$1" =~ .*\.tar\.gz$ ]]
+  then
+    fileName=`sed 's/\.tar\.gz$//' <<< ${fileName}`
+    echo ${fileName}
+  elif [[ "$1" =~ .*\.tar\.bz2$ ]]
+  then
+    fileName=`sed 's/\.tar\.bz2$//' <<< ${fileName}`
+    echo ${fileName}
+  elif [[ "$1" =~ ^.*\.zip$ ]]
+  then
+    fileName=`sed 's/\.zip$//' <<< ${fileName}`
+    echo ${fileName}
+  fi
+}
+
+
+
+function execUnpack(){
+  # 解包
+  # @param file
+  # @param unzipPath
+  local file=$1
+  local unpackPath=$2
+  test ".${unpackPath}" = . && unpackPath=`dirname $1`
+
+  # 判断压缩包的类型，并解压文件
+  if [[ "$1" =~ .*\.tar\.gz$ ]]
+  then
+    tar zxvf $1 -C $unpackPath
+  elif [[ "$1" =~ .*\.tar\.bz2$ ]]
+  then
+    tar jxvf $1 -C $unpackPath
+  elif [[ "$1" =~ ^.*\.zip$ ]]
+  then
+    unzip -u $1 -d $unpackPath
+  else
+    echo 'Please check the package file is compressed archive file.'
+    exit 63
+  fi
+ 
+}
+
+
+
+checkRoot ;
+config ;
+install_init ;
+install_download ;
+install_unpack ;
+do_install ;

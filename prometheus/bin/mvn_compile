@@ -1,0 +1,146 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  Mvn Compile
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#   2015-03
+#===============================================================================
+
+function config(){
+  #-------配置项(无需修改)--------------------------
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi      
+
+  # 加载PROMETHEUS配置
+  loadConf mvn_compile.conf ;
+
+  # 计算配置行
+  MVN_OPT_CNT=$(( ${#MVN_OPT[*]} / 5 ))
+  # debug log
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  # 计算当前日期和时间，用于存放war包
+  UPDATE_YYYYMMDD=$(date +%Y%m%d)
+  UPDATE_HMS=$(date +%H%M%S)
+}
+
+#-----mvn_compile-----
+function acqMvnOptValue(){
+  local name=$1
+  local returnType=$2
+  local index=`acqIndexByName ${name}`
+  local value=`acqMvnOpt ${returnType} ${index}`
+  echo ${value}
+}
+
+function acqIndexByName(){
+  local name=$1
+  local i
+  for((i=0;i<${MVN_OPT_CNT};i++));do
+     if [ ${name} == `acqMvnOpt name $i` ] ; then
+        echo $i ;
+        break ;
+     fi
+  done
+}
+
+function acqMvnOpt(){
+  # 提取 MVN_OPT中的矩阵数据
+  # @param name|actions|svnPath|localPath|svnAccount
+  # @param index
+  # return file or key or value
+  local getType=$1
+  local index=$2
+  IFS=$'\n\t'
+  case "${getType}" in
+       name)
+          index=$(( ${index} * 5 ))     ;;
+       actions)  
+          index=$(( ${index} * 5 + 1 )) ;;
+       svnPath)
+          index=$(( ${index} * 5 + 2 )) ;;
+       localPath)
+          index=$(( ${index} * 5 + 3 )) ;;
+       svnAccount)
+          index=$(( ${index} * 5 + 4 )) ;;
+  esac
+  echo ${MVN_OPT[${index}]}
+}
+
+function acqSvnAccount(){
+  local account=$1
+  local getType=$2
+  case ${getType} in
+       user)
+          awk -F: '{print $1}' <<< ${account} ;;
+       password)
+          awk -F: '{print $2}' <<< ${account} ;;
+  esac
+}
+
+function svnCheckout(){
+  local name=$1
+  local svnPath=`acqMvnOptValue ${name} svnPath`
+  local localPath=`acqMvnOptValue ${name} localPath`
+  local svnAccount=`acqMvnOptValue ${name} svnAccount`
+  local svnUser=`acqSvnAccount ${svnAccount} user`
+  local svnPassword=`acqSvnAccount ${svnAccount} password`
+  execMkdir ${WORKSPACE_PATH}/${localPath} ;
+  echoPlus 32 "Svn checkout url ${svnPath} to local path ${localPath}" ;
+  svn co ${svnPath} ${WORKSPACE_PATH}/${localPath} --username ${svnUser} --password ${svnPassword} << EOF
+p
+EOF
+  [ ".${CLEAR_DIR_TARGET}" != ".true" ] && return ;
+  [ ! -d "${WORKSPACE_PATH}/${localPath}/target" ] && return ;
+  echoPlus 32 "Clear ${WORKSPACE_PATH}/${localPath}/target"
+  rm -rf ${WORKSPACE_PATH}/${localPath}/target
+}
+
+function projectCompile(){
+  local name=$1
+  local localPath=`acqMvnOptValue ${name} localPath`
+  local actions=`acqMvnOptValue ${name} actions`
+  local action
+  IFS=$'|'
+  for action in ${actions} ; do
+      ${MVN_PATH_BIN}mvn ${action} -Dmaven.test.skip=true -f ${WORKSPACE_PATH}/${localPath}
+      if [ ${action} == "war:war" ] ; then
+         moveToUpdatePath ${name} ;
+         local updateFullPath=${UPDATE_PATH}/${UPDATE_YYYYMMDD}-${UPDATE_HMS}
+         ${PROMETHEUS_HOME}/bin/appupdate ${name} ${updateFullPath} full ;
+      fi   
+  done
+}
+
+function moveToUpdatePath(){
+  local name=$1
+  local localPath=`acqMvnOptValue ${name} localPath`
+  local warPath=`find ${WORKSPACE_PATH}/${localPath}/target/ -name "*.war" | head -n1`
+  echoPlus 32 "War path ${warPath}"
+  local updateFullPath=${UPDATE_PATH}/${UPDATE_YYYYMMDD}-${UPDATE_HMS}
+  execMkdir ${updateFullPath}
+  mv ${warPath} ${updateFullPath}/${name}.war
+}
+
+function doCompile(){
+  for((i=0;i<${MVN_OPT_CNT};i++));do
+     local index=$(( $i * 5 ))
+     local name=${MVN_OPT[${index}]}
+     svnCheckout ${name} ;
+     projectCompile ${name}
+  done
+}
+
+#-----mvn_compile-----
+
+
+config ;
+doCompile ;
+

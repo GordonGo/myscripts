@@ -1,0 +1,190 @@
+#!/bin/bash
+
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  EZ tomcat System Config
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#   2015-03
+#===============================================================================
+
+
+function config(){
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi
+  # ssh配置
+  LOGIN_USER=
+  # 留空和USER同名
+  LOGIN_GROUP=
+  # 留空随机生成128位长度密码
+  PASSWORD=
+
+  SSH_PORT=
+  # sudo命令是否需要输入密码 true:需要 false:不需要
+  SUDO_PASSWD=
+
+  # 生成随机证书 1:随机证书 0(default):在配置文件中定义的证书
+  RANDOM_AUTHORIZED_KEYS=
+
+  # 加载PROMETHEUS配置
+  loadConf sysconfig.conf ;
+
+}
+
+function doParam(){
+  local param=
+  [ $# == 0 ] && return ;
+  for param in "$@" ; do
+      local paramName=`echo ${param} | awk -F'=' '{print $1}'`
+      local paramValue=`echo ${param} | awk -F'=' '{print $NF}'`
+      case "${paramName}" in
+          -u|-user)
+              LOGIN_USER=${paramValue} ;;
+          -g|-group)
+              LOGIN_GROUP=${paramValue} ;;
+          -p|-password|-passwd)
+              PASSWORD=${paramValue} ;;
+          -P|-port)
+              SSH_PORT=${paramValue} ;;
+          -sp|-sudopasswd)    
+              SUDO_PASSWD=${paramValue} ;;
+
+          -h|-help)
+              prometheus_help $(basename $0) 
+              exit 0 ;;
+      esac
+  done
+}
+
+
+function buildRandomAuthorized_keys() {
+  # 创建随机证书
+  # @Param  authorized_keys file /home/${USER}/.ssh/authorized.keys
+  local file=$1
+  rm -f ${file}
+  rm -f ${file}.pub
+  ssh-keygen -t dsa -f ${file} -N123456
+}
+
+function buildAuthorized_keys() {
+# 创建证书
+# @Param  authorized_keys file /home/${USER}/.ssh/authorized.keys
+local file=$1
+local dn=`dirname $1`
+execMkdir ${dn}
+if [ ".${RANDOM_AUTHORIZED_KEYS}" == ".1" ] ; then
+   buildRandomAuthorized_keys ${file} ;
+else  
+cat << EOF > ${file}
+ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAzrLAdpduscy3SqePHDfmzPw9/Jn3hEGJ+hN0aohO/ZcVcXA8Sr\
+bMIfKnhpUFyJv9ZCyfN2GEiu7q9GgwIQGYJAtsuLWAzE8r1qdrmpJpyqMJIvQGzWEsmOER9C6Xx4ojzEWSwdKo\
+C7TMxDQbh5iL9xNsCdISKh59zcybjsqfNkzLCLM0p0EXu9RLo31a3+dg6uzxD00Fewek3Qbt1sWhtCjplfNIEt\
+0s3ssJpLSTWlORCtSJd3ySibvx+rruqsQ/MI8Va5mE2C0rc7DsxtbzAQ240kjF2wuWbrKpsITVXdg3kss70V/9a\
+89ZkOyi5jhPF7ZuSnriVZhXJWtq5SCYMQ== liangjian@shenjuan
+EOF
+fi
+chown ${LOGIN_USER}:`acqGroup` ${file}
+chmod 400 ${file}
+}
+
+function buildSshd_config() {
+# 修改sshd_config文件
+cat << EOF > /etc/ssh/sshd_config
+#Port 22
+Port ${SSH_PORT}
+ServerKeyBits 1024
+SyslogFacility AUTHPRIV
+RSAAuthentication yes
+PubkeyAuthentication yes
+# 存放该用户可以用来登录的 RSA/DSA 公钥。
+# 该指令中可以使用下列根据连接时的实际情况进行展开的符号：
+# %% 表示'%'、%h 表示用户的主目录、%u 表示该用户的用户名。
+# 经过扩展之后的值必须要么是绝对路径，要么是相对于用户主目录的相对路径。
+# 默认值是".ssh/authorized_keys"。
+AuthorizedKeysFile      .ssh/authorized.keys
+# 是否允许 root 登录。可用值如下："yes"(默认) 表示允许。"no"表示禁止。
+PermitRootLogin no
+# 是否允许密码为空的用户远程登录。默认为"no"。
+PermitEmptyPasswords no
+# 是否允许使用基于密码的认证。默认为"yes"。
+PasswordAuthentication no
+# 是否允许质疑-应答(challenge-response)认证。默认值是"yes"。
+# 所有 login.conf(5) 中允许的认证方式都被支持。
+ChallengeResponseAuthentication no
+# 是否允许使用基于 GSSAPI 的用户认证。默认值为"no"。仅用于SSH-2。
+GSSAPIAuthentication yes
+# 是否在用户退出登录后自动销毁用户凭证缓存。默认值是"yes"。仅用于SSH-2。
+GSSAPICleanupCredentials yes
+UsePAM yes
+AcceptEnv LANG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
+AcceptEnv LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT
+AcceptEnv LC_IDENTIFICATION LC_ALL LANGUAGE
+AcceptEnv XMODIFIERS
+X11Forwarding yes
+ClientAliveInterval 300
+ClientAliveCountMax 3
+UseDNS no
+DenyUsers guest
+AllowUsers admin root ${LOGIN_USER}
+Subsystem       sftp    /usr/libexec/openssh/sftp-server
+# 默认显示每日提示
+PrintMotd yes
+# 默认显示上次登录信息
+PrintLastLog yes
+EOF
+}
+
+function acqGroup(){
+  if [ ".${LOGINGROUP}" == "." ] ; then
+     GROUP=${LOGIN_USER}
+  fi
+  echo ${GROUP}
+}
+
+function sshConfig(){
+  groupadd `acqGroup`
+  useradd ${LOGIN_USER} -g `acqGroup`
+  local passwd=`acqRandomPassword`
+  echo "password:${passwd}"
+  mkdir -p /data/www/temp
+  echo "user:{LOGIN_USER}   password:${passwd}" > /data/www/temp/passwd.log
+  echo "${passwd}" | passwd --stdin "${LOGIN_USER}"
+  buildAuthorized_keys "/home/${LOGIN_USER}/.ssh/authorized.keys" ;
+  buildSshd_config ;
+  sudoersConifg ;
+  service sshd restart
+}
+
+function sudoersConifg(){
+  chmod 775 /etc/sudoers
+  if [ ".${SUDO_PASSWD}" == ".true" ] ; then
+     echo "${LOGIN_USER}    ALL=(ALL)       ALL" >> /etc/sudoers
+  else 
+     echo "${LOGIN_USER}    ALL=(ALL)      NOPASSWD: ALL" >> /etc/sudoers 
+  fi
+  chmod 440 /etc/sudoers
+}
+
+
+
+
+#代码开始
+
+# 读取全局配置项
+config ;
+# 检查执行用户是否为root
+checkRoot ;
+
+# 配置ssh
+# sshConfig ;
+# 配置欢迎界面
+# welcome ;
+

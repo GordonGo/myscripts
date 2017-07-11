@@ -1,0 +1,84 @@
+#!/bin/bash
+
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  chg hostname
+#   AUTHOR: Liang jian
+#===============================================================================
+
+
+function config(){
+  . /etc/profile
+  # 全局配置项  
+  DEBUG_FILE_NAME=$(basename $0).log
+  ETH_NAME=eth0
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi
+  HOST_IP=`acqInternalIp`
+   
+  # 加载PROMETHEUS配置
+  loadConf prometheus.conf ;
+}
+
+function doParam(){
+  local param=
+  [ $# == 0 ] && return ;
+  for param in "$@" ; do
+      local paramName=`echo ${param} | awk -F'=' '{print $1}'`
+      local paramValue=`echo ${param} | awk -F'=' '{print $NF}'`
+      case "${paramName}" in
+          -hostname)
+              HOST_NAME=${paramValue} ;;
+          -ip)
+              HOST_IP=${paramValue} ;;    
+      esac
+  done
+}
+
+function doCheck(){
+  # 参数不全就退出
+  [ ".${HOST_NAME}" == "." ] && exit 1;
+  [ ".${HOST_IP}" == "." ] && exit 1;  
+}
+
+function doChghostname(){
+  doChghostname_hosts ;
+  doChghostname_network ;
+}
+
+function doChghostname_hosts(){
+  clearHosts ${HOST_NAME} ;
+  clearHosts ${HOST_IP} ;
+  echo "${HOST_IP}    ${HOST_NAME}" >> /etc/hosts
+}
+
+function clearHosts(){
+  local name=$1
+  local str=`grep ${name} /etc/hosts`
+  if [ ".${str}" != "." ] ; then
+     sed -i "/${str}/d" /etc/hosts
+  fi
+}
+
+function doChghostname_network(){
+  local hostName
+  hostName=`grep "HOSTNAME" /etc/sysconfig/network | awk -F= '{print $NF}'`
+  sed -i "s#${hostName}#${HOST_NAME}#g" /etc/sysconfig/network ;
+  hostname ${HOST_NAME} ;
+}
+
+config ;
+doParam $@ ;
+doCheck ;
+doChghostname ;
+
+
+
+

@@ -1,0 +1,149 @@
+#!/bin/bash
+
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  EZ tomcat System Info
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#   DATE: 2014-11-5
+#   VERSION: 1.0.1
+#===============================================================================
+
+# 代码效果，登陆系统信息
+# ##     ##     #!  #&####  $#        ## ####   ##o   ##*   ###       ###   #&#### 
+#  ##   ####   ##   #       $#      ##         ##       ##  ##$#     ####   #&     
+#   #   #  #   #    #####&  $#      #$        ;#        ##  ## ##   ## ##   ###### 
+#   ## ##  ## ##    #       $#      ##         #        ##  ##  ## o#  ##   #&     
+#    # #    #;#     #       $#       ##        ##      ##   ##   #o#   ##   #&     
+#    ##!    o##     ######  $######   !######    ######     ##    #    ##   ######*
+#OperationEngineer liangjian 80327044@qq.com
+#=========================SYSTEM INFO=========================
+#HOSTNAME             =               AY140713143238457e1fZ     
+#PUBLIC_IP            =               0.0.0.0             
+#INTERNAL_IP          =               0.0.0.0             
+#USER                 =               guest                   
+#GROUP                =               guest                   
+#UPTIME               =               2014-10-11,14:42:18       
+#RUNTIME              =               32days,20hour,9minute,12second 
+#OS                   =               CentOS release 6.5 (Final) 
+#KERNEL               =               2.6.32-431.17.1.el6.x86_64 
+#MEM                  =               1803(MB)used/1877(MB)tolal 
+#=========================SYSTEM INFO=========================
+
+function config(){
+  # 全局配置项
+  DEBUG_FILE_NAME=$(basename $0).log
+  ETH_NAME=eth0
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi      
+   
+  # 加载PROMETHEUS配置
+  loadConf prometheus.conf ;
+}
+
+function checkValueError(){
+  # 如果运行错误则返回undefined
+  [ $? -ne 0 ] && echo "undefined"
+}
+
+function printFormat(){
+  # 增强显示 HOSTNAME             =     localhost.localdomain   
+  # @param print key
+  # @param print value
+  local printKey=$1
+  local printValue=$2
+  IFS=$'\n\t'
+  #printf "\e[35m%-12s\e[0m %-2s \e[32m%-25s\e[0m \n" ${printKey} ":" ${printValue}
+  printf "%-12s %-2s %-25s \n" ${printKey} ":" ${printValue}
+}
+
+
+function welcome(){
+  # 打印欢迎信息
+  [ ".${WELCOME}" != ".true" ] && return 0 ;
+  echoPlus 31 ' ##     ##     #!  #&####  $#        ## ####   ##o   ##*   ###       ###   #&#### '                 
+  echoPlus 31 '  ##   ####   ##   #       $#      ##         ##       ##  ##$#     ####   #&     '           
+  echoPlus 31 '   #   #  #   #    #####&  $#      #$        ;#        ##  ## ##   ## ##   ###### '          
+  echoPlus 31 '   ## ##  ## ##    #       $#      ##         #        ##  ##  ## o#  ##   #&     '     
+  echoPlus 31 '    # #    #;#     #       $#       ##        ##      ##   ##   #o#   ##   #&     '          
+  echoPlus 31 '    ##!    o##     ######  $######   !######    ######     ##    #    ##   ######*'
+}
+
+function buildSystemInfoValue(){
+  # build system info value
+  HOSTNAME=`acqHostName`
+  PUBLIC_IP=`acqPublicIp`
+  INTERNAL_IP=`acqInternalIp`
+  USER=`acqUser `
+  GROUP=`acqGroup`
+  UPTIME=`acqUptime`
+  RUNTIME=`acqRuntime `
+  OS=`acqOS `
+  KERNEL=`acqKernel`
+  MEM=`acqMem`
+  CPU=`acqCpuinfo`
+}
+
+function printDisk(){
+  local disk_info disk_max_use max_use
+  disk_max_use=`df -h | awk '{print $5}'  | sort -n |tail -1`
+  disk_info="max_use:${disk_max_use} "`df -h | awk '{print $6" "$5}' | tr '\n' ' '`
+  max_use=`tr -d '%' <<< ${disk_max_use}`
+  IFS=$'\n\t'
+  if [ ${max_use} -ge 80 ] ; then
+     #printf "\e[35m%-12s\e[0m %-2s \e[31m%-25s\e[0m \n" DISK ":" ${disk_info}
+     printFormat DISK '*** '${disk_info} ;
+
+  elif [ ${max_use} -ge 60 ] ; then
+     #printf "\e[35m%-12s\e[0m %-2s \e[33m%-25s\e[0m \n" DISK ":" ${disk_info}
+     printFormat DISK '* '${disk_info} ;
+  else
+     #printf "\e[35m%-12s\e[0m %-2s \e[32m%-25s\e[0m \n" DISK ":" ${disk_info}
+     printFormat DISK ${disk_info} ;
+  fi
+}
+
+function echoSystemInfo(){
+  # 输出system info
+  echo "OperationEngineer ${OE}";
+  echo ${DIVIDING_LINE}
+  printFormat HOSTNAME ${HOSTNAME} ;
+  printFormat PUBLIC_IP ${PUBLIC_IP} ;
+  printFormat INTERNAL_IP  ${INTERNAL_IP} ;
+  printFormat USER  ${USER} ;
+  printFormat GROUP ${GROUP} ;
+  printFormat UPTIME ${UPTIME} ;
+  printFormat RUNTIME ${RUNTIME} ;
+  printFormat OS ${OS} ;
+  printFormat KERNEL ${KERNEL} ;
+  printFormat MEM ${MEM} ;
+  printFormat CPU ${CPU} ;
+  printDisk
+  echo ${DIVIDING_LINE}
+}
+
+function execCmd(){
+  # 执行命令行
+  IFS=$'\n\t'
+  local cmd
+  for cmd in ${EXEC_CMD_OPT[*]} ; do
+      if [ -x ${cmd} ] ; then
+         eval ${cmd}
+      fi
+  done
+}
+
+#  main
+config ;
+
+buildSystemInfoValue ;
+welcome ;
+echoSystemInfo ;
+execCmd ;

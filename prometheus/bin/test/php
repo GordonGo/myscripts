@@ -1,0 +1,2007 @@
+
+# 七夕节封网，禁止线上发布！！！
+
+白衣
+http://res.51xianqu.net/software/java/UnlimitedJCEPolicy/UnlimitedJCEPolicyJDK7/US_export_policy.jar
+http://res.51xianqu.net/software/java/UnlimitedJCEPolicy/UnlimitedJCEPolicyJDK7/local_policy.jar
+
+18:00
+zimbraPrefSortOrder: BDLV:,CAL:,CLV:,CLV-main:dateDesc,CNS:,CNSRC:,CNTGT:,CV:,
+ TKL:,TV:,TV-SR-1:dateDesc,TV-main:dateDesc
+zimbraLastLogonTimestamp: 20160728020418Z
+zimbraAuthTokens: 384245633|1470181698823|8.6.0_GA_1153
+zimbraAuthTokens: 451949953|1470216222999|8.6.0_GA_1153
+zimbraAuthTokens: 205217545|1470234216319|8.6.0_GA_1153
+zimbraAuthTokens: 1857669461|1470311119199|8.6.0_GA_1153
+zimbraAuthTokens: 1051021274|1470311155612|8.6.0_GA_1153
+userPassword:: e1NTSEE1MTJ9bHBhdUVwQ1FHeXkxa1QwTFN4UjlUZTBsZUx1b0JqaGFobEFQaXB
+ HMXlVRS9XUEF5QXN0QStyTmV3K0V4WnljWkVrY1Y0TmM5TklNeDVTbDZDdjhjVHM0Nlp3cXV5cWVv
+zimbraAuthTokenValidityValue: 1
+zimbraPasswordModifiedTime: 20160802114459Z
+zimbraCsrfTokenData: 69643d33363a37383861366162372d343237302d343665362d3866313
+ 52d6534653437383237363134333b6578703d31333a313437303331313131393139393b736964
+ 3d31303a313834343834393832373b:915d810befb2215c6e8c817038deb288:1470311119199
+zimbraCsrfTokenData: 69643d33363a37383861366162372d343237302d343665362d3866313
+ 52d6534653437383237363134333b6578703d31333a313437303331313135353631323b736964
+ 3d31303a2d3537383535303937383b:b6cdabae7ee0855335c4813f8ac9cc88:1470311155612
+
+
+12:00
+zimbraLastLogonTimestamp: 20160728020418Z
+zimbraAuthTokens: 384245633|1470181698823|8.6.0_GA_1153
+zimbraAuthTokens: 451949953|1470216222999|8.6.0_GA_1153
+zimbraAuthTokens: 205217545|1470234216319|8.6.0_GA_1153
+zimbraAuthTokens: 1857669461|1470311119199|8.6.0_GA_1153
+zimbraAuthTokens: 1051021274|1470311155612|8.6.0_GA_1153
+userPassword:: e1NTSEE1MTJ9bHBhdUVwQ1FHeXkxa1QwTFN4UjlUZTBsZUx1b0JqaGFobEFQaXB
+ HMXlVRS9XUEF5QXN0QStyTmV3K0V4WnljWkVrY1Y0TmM5TklNeDVTbDZDdjhjVHM0Nlp3cXV5cWVv
+zimbraAuthTokenValidityValue: 1
+zimbraPasswordModifiedTime: 20160802114459Z
+zimbraCsrfTokenData: 69643d33363a37383861366162372d343237302d343665362d3866313
+ 52d6534653437383237363134333b6578703d31333a313437303331313131393139393b736964
+ 3d31303a313834343834393832373b:915d810befb2215c6e8c817038deb288:1470311119199
+zimbraCsrfTokenData: 69643d33363a37383861366162372d343237302d343665362d3866313
+ 52d6534653437383237363134333b6578703d31333a313437303331313135353631323b736964
+ 3d31303a2d3537383535303937383b:b6cdabae7ee0855335c4813f8ac9cc88:1470311155612
+
+
+
+
+
+
+
+
+jdbc:h2:/data/www/DB/keybox;CIPHER=AES
+
+    // create a database connection
+    String user = "keybox";
+    String password = filepwd 45WJLnwhpA47EepT162hrVnDn3vYRvJhpZi0sVdvN9Sdsf
+    String connectionURI = "jdbc:h2:" + DB_PATH + "/keybox;CIPHER=AES";
+
+
+TRUNCATE TABLE TERMINAL_LOG ;
+
+DELETE FROM SESSION_LOG 
+DELETE FROM STATUS 
+
+jdbc:h2:/data/www/temp/jetty/keybox/WEB-INF/classes/keydb/keybox;CIPHER=AES
+
+java -cp /data/www/install/h2/bin/h2*.jar org.h2.tools.Backup -file "~/backup.zip" -dir "/data/www/DB/" -db "keybox"
+java -cp /data/www/install/h2/bin/h2*.jar org.h2.tools.Backup -file "~/backup.zip" -dir "/data/www/temp/" -db "keybox"
+
+java -cp /data/www/install/h2/bin/h2*.jar org.h2.tools.Shell
+
+java -cp /data/www/install/h2/bin/h2*.jar org.h2.tools.Script -url "jdbc:h2:/data/www/install/KeyBox/jetty/keybox/WEB-INF/classes/keydb/keybox;CIPHER=AES" \
+-user "keybox" -password "filepwd 45WJLnwhpA47EepT162hrVnDn3vYRvJhpZi0sVdvN9Sdsf" -script "~/backup2.sql"
+
+
+
+java -cp /data/www/install/h2/bin/h2*.jar org.h2.tools.RunScript -url "jdbc:h2:/data/www/DB/keybox;CIPHER=AES" \
+-user "keybox" -password "filepwd 45WJLnwhpA47EepT162hrVnDn3vYRvJhpZi0sVdvN9Sdsf" -script "~/backup.sql"
+
+
+http://ssh2.51xianqu.net:8888/
+
+jdbc:h2:file:/data/www/DB/keybox.h2.db
+
+
+#!/bin/bash
+
+sudo bash
+
+echo 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCdqTAViry9umDbFbKOPzoltdlnHU/rXuxPYMPoNHsPFyZQ957p2BkNDgPW03Zm81IA+OgQONwlGudtlYxTl8+lkuIJkhGuBQr6MjIXtnIh7Kce2tF2MUWSbzgTQ9gX49QeMHfcg7jJ84x34iNuixdSERyxgDn9v2EQEk96J5NZy89o5tdu+Axc0/m1WunFIPiY9orBdc4LFnUA8Kfj9vH1zpTwh/2mxNjOzOgkDYVeLoUo2sczrMSctoq9UHaW38Hnz4ks6Z/RpbRtblt3LQnVkaROCsVc2G0gvWesAwUd/dpCAg7Uo+YORh9DndsYSDAEYiYio+LpJfw/eJf5g3+D keybox@global_key' >> /home/manage/.ssh/authorized.keys
+
+
+
+
+
+
+
+48005  /appstat/log/
+8080   /bigmouth/
+48005  /appstat/log/uploadStream/
+8080   /bigmouth/uploadStream/
+
+http://114.55.106.248:48005/appstat/log
+
+
+./zabbix_api.py --add-host 10.161.226.132 aug-gray hosts_java_auc 'Template Java' 10000 auc 8080
+./zabbix_api.py --add-host 10.252.83.126 auc-1 hosts_java_auc 'Template Java' 10000 auc 8080
+./zabbix_api.py --add-host 10.161.221.131 auc-2 hosts_java_auc 'Template Java' 10000 auc 8080
+
+./zabbix_api.py --add-host 10.51.37.69 baohe-gray hosts_java_baohe 'Template Java' 10000 baohe 8080
+
+./zabbix_api.py --add-host 10.51.9.88 bkb-1 hosts_java_bkb 'Template Java' 10000 bkb 8080
+
+./zabbix_api.py --add-host 10.161.208.102 centralbank-gray hosts_java_centralbank 'Template Java' 10000 centralbank 8080
+./zabbix_api.py --add-host 10.162.99.20 centralbank-task hosts_java_centralbank 'Template Java' 10000 centralbank 8080
+./zabbix_api.py --add-host 10.251.247.55 centralbank-1 hosts_java_centralbank 'Template Java' 10000 centralbank 8080
+./zabbix_api.py --add-host 10.162.100.89 centralbank-2 hosts_java_centralbank 'Template Java' 10000 centralbank 8080
+
+
+./zabbix_api.py --add-host 10.168.243.64 config-center-gray hosts_java_config-center 'Template Java' 10000 config-center 7001
+./zabbix_api.py --add-host 10.117.45.53 config-center-1 hosts_java_config-center 'Template Java' 10000 config-center 7001
+./zabbix_api.py --add-host 10.171.241.33 config-center-2 hosts_java_config-center 'Template Java' 10000 config-center 7001
+
+./zabbix_api.py --add-host 10.252.175.17 crm-gray hosts_java_crm 'Template Java' 10000 crm 8080
+./zabbix_api.py --add-host 10.162.77.55 crm-1 hosts_java_crm 'Template Java' 10000 crm 8080
+./zabbix_api.py --add-host 10.252.163.83 crm-2 hosts_java_crm 'Template Java' 10000 crm 8080
+
+./zabbix_api.py --add-host 10.252.114.66 dataapi-gray hosts_java_dataapi 'Template Java' 10000 dataapi 8080
+./zabbix_api.py --add-host 10.173.141.7 dataapi-1 hosts_java_dataapi 'Template Java' 10000 dataapi 8080
+./zabbix_api.py --add-host 10.173.139.224 dataapi-2 hosts_java_dataapi 'Template Java' 10000 dataapi 8080
+
+
+./zabbix_api.py --add-host 10.117.49.195 dbtunnel-1 hosts_java_dbtunnel 'Template Java' 10000 dbtunnel 8080
+
+
+./zabbix_api.py --add-host 10.251.234.109 delivery-gray hosts_java_delivery 'Template Java' 10001 delivery 8081
+./zabbix_api.py --add-host 10.252.120.112 delivery-back hosts_java_delivery 'Template Java' 10001 delivery 8081
+./zabbix_api.py --add-host 10.251.251.137 delivery-1 hosts_java_delivery 'Template Java' 10001 delivery 8081
+./zabbix_api.py --add-host 10.252.144.3 delivery-2 hosts_java_delivery 'Template Java' 10001 delivery 8081
+
+./zabbix_api.py --add-host 10.117.188.22 dw-1 hosts_java_dw 'Template Java' 10000 dw 8080
+
+./zabbix_api.py --add-host 10.51.11.225 iris-magci-1 hosts_java_iris-magic 'Template Java' 10000 iris-magci 8080
+./zabbix_api.py --add-host 10.117.60.161 iris-api-1 hosts_java_iris-api 'Template Java' 10000 iris-api 8080
+./zabbix_api.py --add-host 10.132.9.58 iris-api-2 hosts_java_iris-api 'Template Java' 10000 iris-api 8080
+
+./zabbix_api.py --add-host 10.169.13.201 itemcenter-gray hosts_java_itemcenter 'Template Java' 10006 itemcenter 8086
+./zabbix_api.py --add-host 10.168.125.73 itemcenter-1 hosts_java_itemcenter 'Template Java' 10006 itemcenter 8086
+./zabbix_api.py --add-host 10.168.138.68 itemcenter-2 hosts_java_itemcenter 'Template Java' 10006 itemcenter 8086
+./zabbix_api.py --add-host 10.168.4.35 itemcenter-3 hosts_java_itemcenter 'Template Java' 10006 itemcenter 8086
+
+
+export PROJECT_NAME=jobcenter
+export JMX_PORT=10000
+export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.171.224.209 ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.168.45.4 ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.132.81.224 ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=landmarkbi
+export JMX_PORT=10000
+export HTTP_PORT=8080
+export HOST_IP1=10.252.151.235
+./zabbix_api.py --add-host $HOST_IP1 ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+
+
+export PROJECT_NAME=logistics
+export JMX_PORT=10002
+export HTTP_PORT=8082
+export HOST_IP1=10.252.151.235
+./zabbix_api.py --add-host 10.252.126.68 ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.168.90.38 ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.252.162.69 ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.168.84.156 ${PROJECT_NAME}-3 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.165.33.248 ${PROJECT_NAME}-4 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=logistics-backstage
+export JMX_PORT=10000
+export HTTP_PORT=8080
+export HOST_IP1=10.252.151.235
+./zabbix_api.py --add-host 10.161.210.239 ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.132.0.211 ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+
+export PROJECT_NAME=market
+export JMX_PORT=10000
+export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.171.202.93 ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.175.205.86 ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.168.76.95 ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.168.138.28 ${PROJECT_NAME}-back hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=market-tool
+export JMX_PORT=10000
+export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.117.198.248 ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.117.67.81 ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.117.187.249 ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=logisticscentral
+export JMX_PORT=10000
+export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.132.52.171 ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.117.52.141 ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.117.187.249 ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=member
+export JMX_PORT=10000
+export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.251.245.51     ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.117.42.91      ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.251.236.71      ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+                                                                                      
+export PROJECT_NAME=msgcenter
+export JMX_PORT=10000
+export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.168.217.161    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.171.238.8     ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.117.43.240      ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=org
+export JMX_PORT=10000
+export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.117.209.197    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.117.61.214    ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.117.61.216      ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+
+export PROJECT_NAME=outway
+export JMX_PORT=10000
+export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.117.177.39    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.117.34.213   ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.117.61.216      ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=pay
+export JMX_PORT=10000
+export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.168.1.213    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.168.106.214   ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.168.106.213      ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=payservice-alipay
+export JMX_PORT=10000
+export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.168.93.198    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.117.60.170   ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.117.15.201      ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+
+export PROJECT_NAME=payservice-wxpay
+export JMX_PORT=10000
+export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.117.213.208    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.117.15.203  ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.168.96.105      ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=poscrm
+export JMX_PORT=10000
+export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.160.37.73    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.160.37.3  ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+
+export PROJECT_NAME=procurement
+export JMX_PORT=10000
+export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.117.3.182    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.162.78.138  ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.252.100.98      ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+
+export PROJECT_NAME=rate
+export JMX_PORT=10000
+export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.117.200.5    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.117.200.214  ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.117.17.25      ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=redis-control-center
+export JMX_PORT=10000
+export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.169.5.150   ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.117.49.173  ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=rockland
+export JMX_PORT=10000   ;   export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.132.60.240   ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.132.11.114  ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=sdb
+export JMX_PORT=10000  ;   export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.117.198.189    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.162.55.83  ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.117.67.51      ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+
+export PROJECT_NAME=sdw
+export JMX_PORT=10000  ;   export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.117.208.156    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.117.50.198  ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.117.208.58      ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=search
+./zabbix_api.py --add-host 10.168.241.190   search-proxy   hosts_java_$PROJECT_NAME 'Template OS Linux' 
+./zabbix_api.py --add-host 10.251.238.209   search-engine-cluster2-node2    hosts_java_$PROJECT_NAME 'Template OS Linux' 
+./zabbix_api.py --add-host 10.251.240.232   search-engine-cluster2-node1   hosts_java_$PROJECT_NAME 'Template OS Linux' 
+./zabbix_api.py --add-host 10.175.206.143   search-engine-cluster1-node2    hosts_java_$PROJECT_NAME 'Template OS Linux' 
+./zabbix_api.py --add-host 10.171.210.31    search-engine-cluster1-node1    hosts_java_$PROJECT_NAME 'Template OS Linux' 
+./zabbix_api.py --add-host 10.168.225.227   search-task    hosts_java_$PROJECT_NAME 'Template OS Linux' 
+./zabbix_api.py --add-host 10.252.253.73   search-engine-gray-node1    hosts_java_$PROJECT_NAME 'Template OS Linux' 
+./zabbix_api.py --add-host 10.168.143.100   search-engine-gray-node2    hosts_java_$PROJECT_NAME 'Template OS Linux' 
+
+
+export PROJECT_NAME=search-configcenter
+export JMX_PORT=10000  ;   export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.132.53.9    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.132.9.185  ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.117.206.225     ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=search-dumpcenter
+export JMX_PORT=10000  ;   export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.132.52.145    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.132.53.80  ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.168.18.190    ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=search-service
+export JMX_PORT=10000  ;   export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.132.80.243    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.132.81.92  ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.117.207.180    ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=searcher
+export JMX_PORT=10000  ;   export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.171.249.87    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.160.23.167  ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.161.211.214    ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=shop
+export JMX_PORT=10000  ;   export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.168.27.5    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.160.85.149  ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.160.4.28    ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.252.95.95    ${PROJECT_NAME}-3 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=shopback
+export JMX_PORT=10000  ;   export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.168.145.118    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.168.114.228  ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.173.136.60    ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=shorturl
+export JMX_PORT=10000  ;   export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.132.24.66  ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+
+
+
+
+export PROJECT_NAME=solrcloud
+./zabbix_api.py --add-host 10.168.19.116         solrcloud-node1-gray   hosts_java_$PROJECT_NAME 'Template OS Linux' 
+./zabbix_api.py --add-host 10.117.195.92         solrcloud-cluster1-node1    hosts_java_$PROJECT_NAME 'Template OS Linux' 
+./zabbix_api.py --add-host 10.165.97.154         solrcloud-cluster1-node2     hosts_java_$PROJECT_NAME 'Template OS Linux' 
+./zabbix_api.py --add-host 10.132.45.68          solrcloud-node2-gray         hosts_java_$PROJECT_NAME 'Template OS Linux' 
+./zabbix_api.py --add-host 10.132.21.190         solrcloud-cluster2-node1     hosts_java_$PROJECT_NAME 'Template OS Linux' 
+./zabbix_api.py --add-host 10.132.53.15         solrcloud-cluster2-node2     hosts_java_$PROJECT_NAME 'Template OS Linux' 
+./zabbix_api.py --add-host 10.25.241.80          solrcloud-cluster3-node-1    hosts_java_$PROJECT_NAME 'Template OS Linux' 
+./zabbix_api.py --add-host 10.172.203.25       solrcloud-cluster3-node-2    hosts_java_$PROJECT_NAME 'Template OS Linux' 
+
+
+
+export PROJECT_NAME=stockcenter
+export JMX_PORT=10000  ;   export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.165.6.65   ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.47.65.193  ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.252.113.2  ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+
+
+
+export PROJECT_NAME=store-proxy
+export JMX_PORT=10000  ;   export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.117.111.48    ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+
+
+export PROJECT_NAME=timeoutcenter
+export JMX_PORT=10000  ;   export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.168.142.104    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.51.28.167      ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.174.176.110    ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=tmq
+export JMX_PORT=10000  ;   export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.168.106.63    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.51.2.235      ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.51.7.53       ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=tmq-admin
+export JMX_PORT=10000  ;   export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.24.252.91   ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.24.252.100      ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=tms
+export JMX_PORT=10000  ;   export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.160.45.107    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host  10.25.85.139      ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.24.243.72       ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=tracker
+export JMX_PORT=10000  ;   export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.162.72.115    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host  10.162.97.122      ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+
+export PROJECT_NAME=trade
+export JMX_PORT=10003  ;   export HTTP_PORT=8083
+./zabbix_api.py --add-host 10.252.80.182    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host  10.252.94.232      ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.252.251.186       ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.168.57.209       ${PROJECT_NAME}-3 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.168.122.58       ${PROJECT_NAME}-4 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=userblack
+export JMX_PORT=10000  ;   export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.251.235.144    ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=version
+export JMX_PORT=10000  ;   export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.168.4.64    ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.161.237.17     ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+
+export PROJECT_NAME=warninglog
+export JMX_PORT=10000  ;   export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.117.197.141   ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host  10.51.12.2     ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.117.60.246       ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+export PROJECT_NAME=wms
+export JMX_PORT=10000  ;   export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.132.23.22   ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host  10.117.206.167    ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.132.18.103       ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+
+export PROJECT_NAME=wmsOrderCenter
+export JMX_PORT=10000  ;   export HTTP_PORT=8080
+./zabbix_api.py --add-host 10.132.47.71   ${PROJECT_NAME}-gray hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host  10.117.58.205     ${PROJECT_NAME}-1 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+./zabbix_api.py --add-host 10.132.53.202       ${PROJECT_NAME}-2 hosts_java_$PROJECT_NAME 'Template Java' $JMX_PORT $PROJECT_NAME $HTTP_PORT
+
+./zabbix_api.py --add-mysql-host 10.25.173.51 mysql-history-slave1 hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.25.69.146 mysql-member-slave1 hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.25.253.223 mysql-o2o-slave-bi hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.25.253.215 mysql-history-master hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.25.66.112 mysql-stats-slave1 hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.25.3.10 mysql-market-master-57 hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.25.62.202 mysql-market-slave1-57 hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.47.115.195 mysql-mha-manage-node hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.47.115.193 mysql-ha1 hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.47.115.141 mysql-ha2 hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.47.58.229 mysql-ha3 hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.24.39.51 mysql-stats-master hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.45.23.189 mysql-o2o-master hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.45.32.245 mysql-poi-slave3 hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.47.135.117 mysql-baohe-master hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.47.96.230 mysql-centralbank-slave1 hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.47.97.167 mysql-centralbank-master hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.47.93.208 mysql-zabbix-master hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.47.93.122 mysql-o2o-slave3 hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.47.89.235 mysql-backup-center hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.46.79.160 mysql-o2o-slave1 hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.46.73.78 mysql-poi-slave1 hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.47.49.105 mysql-poi-master hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.160.21.165 mysql-sequence-1 hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.168.110.67 mysql-sequence-2 hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.171.244.143 mysql-db-master hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.51.1.200 mysql-midware-slave1 hosts_mysql 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-mysql-host 10.252.136.75 mysql-midware-master hosts_mysql 'Template OS Linux','Template Process Monitor'
+
+
+
+
+
+
+./zabbix_api.py --add-redis-host 10.25.254.30 redis-lbs-slave hosts_redis 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-redis-host 10.25.171.36 redis-lbs-master hosts_redis 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-redis-host 10.168.68.160 redis-trade-master hosts_redis 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-redis-host 10.24.236.167 redis-trade-slave hosts_redis 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-redis-host 10.252.175.216 redis-market-master hosts_redis 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-redis-host 10.165.14.132 redis-market-slave hosts_redis 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-redis-host 10.117.33.113 redis-logistics-master hosts_redis 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-redis-host 10.168.56.241 redis-logistics-slave hosts_redis 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-redis-host 10.175.198.135 redis-member-slave hosts_redis 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-redis-host 10.252.131.204 redis-member-master hosts_redis 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-redis-host 10.117.2.132 redis-log-statistics-master hosts_redis 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-redis-host 10.168.2.40 redis-item-slave hosts_redis 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-redis-host 10.117.38.34 redis-item-master hosts_redis 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-redis-host 10.117.34.94 redis-o2o-slave1 hosts_redis 'Template OS Linux','Template Process Monitor'
+./zabbix_api.py --add-redis-host 10.165.100.113 redis-o2o-master hosts_redis 'Template OS Linux','Template Process Monitor'
+
+
+
+
+
+
+http://{HOST.IP}:{$HTTP_PORT}/search/dumpcenter/webStatus
+
+
+jsvc.exec 
+-java-home /usr/java/jdk 
+-user tomcat 
+-pidfile /data/www/logs/apps/8080-dataapi/tomcat/catalina-daemon.pid 
+-wait 10 
+-outfile /data/www/logs/apps/8080-dataapi/tomcat/catalina-daemon.2016-07-05.log 
+-errfile &1 
+-classpath /usr/local/tomcat7-8080-dataapi/bin/bootstrap.jar:/usr/local/tomcat7-8080-dataapi/bin/commons-daemon.jar:/usr/local/tomcat7-8080-dataapi/bin/tomcat-juli.jar 
+-Dnop 
+-server 
+-Xms5120m 
+-Xmx5120m 
+-Xmn1280m 
+-Xss256k 
+-XX:PermSize=64m 
+-XX:MaxPermSize=256m 
+-Xloggc:/data/www/temp/gc.log 
+-XX:+HeapDumpOnOutOfMemoryError 
+-XX:HeapDumpPath=/data/www/temp 
+-XX:+DisableExplicitGC 
+-XX:+UseConcMarkSweepGC 
+-XX:+UseCMSCompactAtFullCollection 
+-XX:+CMSClassUnloadingEnabled 
+-Xdebug 
+-Xnoagent 
+-Djava.compiler=NONE 
+-Xrunjdwp:transport=dt_socket,address=9999,server=y,suspend=n 
+-Dfile.encoding=UTF-8 
+-Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager 
+-Dcom.sun.management.jmxremote 
+-Djava.rmi.server.hostname=10.173.141.7 
+-Dcom.sun.management.jmxremote.ssl=false 
+-Dcom.sun.management.jmxremote.authenticate=false 
+-Dfoo.jmx=true 
+-Dfoo.jmx.detailed=true 
+-Djava.endorsed.dirs= 
+-Dcatalina.base=/usr/local/tomcat7-8080-dataapi 
+-Dcatalina.home=/usr/local/tomcat7-8080-dataapi 
+-Djava.io.tmpdir=/usr/local/tomcat7-8080-dataapi/temp 
+org.apache.catalina.startup.Bootstrap 
+
+
+
+
+在 "api-daily" 找不到用于监控项 key"jmx["Catalina:type=GlobalRequestProcessor,name=http-{$HTTPS_PORT}", bytesSent]" 的主机接口.
+
+
+
+
+
+
+=FIND(A2;",";0)
+
+
+if(!extension_loaded("ldap")){
+  dl("php_ldap.so");
+}else{
+  echo "ldap已经安装";
+}
+
+
+
+git clone  ssh://git@stash.51xianqu.net:7999/cmdb/cmdb.git
+repository.opencastproject.org/nexus/content/groups/public/org/springframework/spring-context-support/4.1.6.RELEASE/spring-context-support-4.1.6.RELEASE.pom
+
+
+
+scp [-i 私钥]  /home/xxx.zip xqadmin@file.51xianqu.net:/data/www/ROOT/static/upload/iOS/sdb/daily/
+
+
+Maven 中央仓库地址：
+1. http://www.sonatype.org/nexus/
+2. http://mvnrepository.com/ （本人推荐仓库）
+
+3. http://repo1.maven.org/maven2
+https://repo1.maven.org/maven2/
+
+
+RBL列表-Zimbra官方推荐的
+* zen.spamhaus.org
+* psbl.surriel.com
+* b.barracudacentral.org
+* bl.spamcop.net
+* dnsbl.sorbs.net
+
+
+
+1、清除所有队列里面的延迟邮件。
+/opt/zimbra/postfix/sbin/postsuper -d ALL deferred
+
+
+2、清除所有队列里面的保留邮件。
+/opt/zimbra/postfix/sbin/postsuper -d ALL hold
+
+
+3、清除所有队列里面的正在进入邮件。
+/opt/zimbra/postfix/sbin/postsuper -d ALL incoming
+
+
+4、清除所有队列里面的正在发送邮件。
+/opt/zimbra/postfix/sbin/postsuper -d ALL active
+
+
+com.zimbra.cs.ldap.LdapException: LDAP error:  - unable to get connection: INVALID_CREDENTIALS: Bind failed: ERR_268 Cannot find a partition for uid=admin
+ExceptionId:qtp509886383-408:https://10.17.1.78:7071/service/admin/soap/CheckAuthConfigRequest:1458872686345:82f8648f24b66c33
+Code:ldap.LDAP_ERROR
+  at com.zimbra.cs.ldap.LdapException.LDAP_ERROR(LdapException.java:90)
+  at com.zimbra.cs.ldap.unboundid.UBIDLdapException.mapToLdapException(UBIDLdapException.java:74)
+
+
+ /opt/zimbra/openldap/bin/ldapadd -H ldap://71tong.easysaas.net -x -c -D "uid=zimbra,cn=admins,cn=zimbra" -w IW32Vcnix</opt/zimbra/20130410.ldif
+
+
+/opt/zimbra/mariadb/bin/mysqldump -uroot -pG9EnUVLsJ5ua9W2lGR9o8ckdhk. -S/opt/zimbra/db/mysql.sock --single-transaction -A > /data/www/backups/zimbra/all-$(date +%Y%m%d).sql
+
+
+# lion
+use mysql;
+CREATE DATABASE lion CHARACTER SET utf8 COLLATE utf8_general_ci;
+CREATE USER 'lion' IDENTIFIED BY 'lion';
+GRANT ALL ON lion.* TO 'lion'@'%' IDENTIFIED BY 'ff3b67c3b';
+GRANT ALL ON lion.* TO 'lion'@'localhost' IDENTIFIED BY 'ff3b67c3b';
+FLUSH PRIVILEGES;
+
+服务标签  
+4G1V7C2
+快速服务代码  
+9677723618
+
+
+echo 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCi3rcTSthd2SksRGLhCo/FLV9djQsz2VJ+lcipmnvnNJg5HdOrttlkwicOVgzHxNPOUEQsioCBGElpGayCtdPB9IlRaYqfsJ3NSEbpDnm4SaWXgwfKmqh8qFWNJ5y7RyxAyZJ/avbQ2pBD2e8gFmhvczwxMaIGKcyLWKwC0Hk4N7pa3Gndf7HqO5+xsaeX/lFH1u95rQ8Uhb8lsubAvXDa9Up2v/vzjJIXyN8tWwx5V46SuLhEaSYyBg2haT/4iQTld5QaY3WRbMrW+zZP2oX2q4MM9nrB5kzX9e7XhJ9bxlJVUmNPnpdSBpDwOQNfMMA/zR12kfBOtIgyruGPKpav cY@Monica-2.local'  >> /home/xqadmin/.ssh/authorized.keys 
+
+
+10967
+4703
+
+
+<dependency>
+  <groupId>com.shandiangou.market</groupId>
+  <artifactId>market-client</artifactId>
+  <version>1.0.3.RELEASE</version>
+</dependency>
+
+
+
+<dependency>
+  <groupId>com.shandiangou.market</groupId>
+  <artifactId>market-client</artifactId>
+  <version>1.0.3.RELEASE</version>
+</dependency>
+
+
+
+
+
+
+
+
+
+# Firewall configuration written by system-config-firewall                                                                                                                            
+# Manual customization of this file is not recommended.                                                                                                                               
+*filter                                                                                                                                                                               
+:INPUT ACCEPT [0:0]                                                                                                                                                                   
+:FORWARD ACCEPT [0:0]                                                                                                                                                                 
+:OUTPUT ACCEPT [0:0]                                                                                                                                                                  
+-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT                                                                                                                               
+-A INPUT -p icmp -j ACCEPT                                                                                                                                                            
+-A INPUT -i lo -j ACCEPT                                                                                                                                                              
+                                                                                                                                                                                      
+# intral                                                                                                                                                                              
+-A INPUT -s 10.0.0.0/8 -j ACCEPT                                                                                                                                                      
+-A INPUT -s 127.0.0.0/8 -j ACCEPT                                                                                                                                                     
+-A INPUT -s 115.236.161.16/28 -j ACCEPT                                                                                                                                               
+-A INPUT -s 124.160.28.144/29 -j ACCEPT                                                                                                                                               
+                                                                                                                                                                                      
+  H4*j67Ghd6%7Gn#n                                                                                                                                                                                    
+                                                                                                                                                                                      
+-A INPUT -j REJECT --reject-with icmp-host-prohibited                                                                                                                                 
+-A FORWARD -j REJECT --reject-with icmp-host-prohibited                                                                                                                               
+COMMIT
+
+加9的神兵谁卖的优惠点
+
+9442551de360559d5f594ebf01ef98d9
+收点9阶金色装备
+
+15 0 * * * /usr/local/prometheus/bin/system/ezbackup -path=/usr/local/KeyBox -day=3
+
+  # 名称  jdk版本  tomcat版本 配置文件路径
+
+shop      7 7 all '-'
+delivery    7 7 all '-'
+member      7 7 all '-'
+market      7 7 all '-'
+logistics   7 7 all '-'
+searcher    8 7 all '-'
+tmq         7 8 all '-'
+tracker     7 8 all '-'
+store-proxy 7 8 all '-'
+msgcenter   7 8 all '-'
+config-center     7 8 all '-'
+analyzer    7 7 all '-'
+centralbank 7 7 all '-'
+auc         7 7 all '-'
+itemcenter  7 7 all '-'
+centralbank 7 7 all '-'
+jobcenter   7 7 all '-'
+crm         7 7 all '-'
+payservice-alipay 7 7 all '-'
+payservice-wxpay  7 7 all '-'
+pay         7 7 all '-'
+timeoutcenter     7 7 all '-'
+org         7 7 all '-'
+small       7 7 all '-'
+baohe       7 7 all '-'
+shopback    7 7 all '-'
+skynet      7 7 all '-'
+logistics-backstage  7 7 all '-'
+landmarkbi  7 7 all '-'
+sdmp        7 7 all '-'
+redis-control-center 7 7 all '-'
+rediscc-test 7 7 all '-'
+sdw         7 7 all '-'
+procurement 7 7 all '-'
+rate        7 7 all '-'
+version     7 7 all '-'
+iris-api    7 7 all '-'
+qacenter    7 7 all '-'
+
+
+
+
+
+
+TOMCAT_APP_NAME_OPT=( sanguo admin timer talking server-1 server-2 )
+TOMCAT_HTTP_PORT_OPT=( 8080 8081 8082 8083 8085 8095  )
+HTTP_STATUS_OPT=( index.do login/login.jsp index.html test.jsp index.html index.html )
+APP_CONF_NAME_OPT=( server.properties log4j.properties )
+DIVIDING_LINE="----------------------------------------------------------------------------------------------------------"
+
+#TOMCAT_EZ_SETUP
+TOMCAT_SHUTDOWN_PORT_OPT=( 8000 8001 8002 8003 8005 8015 )
+TOMCAT_JMX_rmiRegistryPortPlatform_OPT=( 10000 10001 10002 10003 10005 10015 )
+TOMCAT_JMX_rmiServerPortPlatform_OPT=( 10100 10101 10102 10103 10105 10115 )
+TOMCAT_SERVERXML_WEBAPPSPATH_OPT=( sanguo admin timer talking server server )
+
+# tomcat服务重启是否删除日志
+# false:不删除日志
+# true:删除日志
+DEL_LOGS=true
+
+
+# 发布代码时是否备份war包
+# false:不备份
+# true:备份
+BACKUP_WAR=false
+
+# java特性文件
+APP_CONF_NAME_OPT=(
+  # java properties
+  "server.properties"
+  "log4j.properties"
+)
+
+
+TOMCAT_INSTALL_PATH='/usr/local'
+
+# 强制编码 留空则不强制编码
+TOMCAT_HTTP_URI_ENCODING=
+
+# 启动参数(JAVA_OPTS)支持
+# true:生效TOMCAT_JAVA_OPTS
+# false|（默认值） 不生效TOMCAT_JAVA_OPTS
+OPEN_TOMCAT_JAVA_OPTS=true
+
+# 若启用，且当前tomcat不需要启动参数 则输入-
+TOMCAT_JAVA_OPTS=(
+  "-Dfile.encoding=UTF-8"
+  "-Dfile.encoding=UTF-8"
+  "-Dfile.encoding=UTF-8"
+  "-Dfile.encoding=UTF-8"
+  "-Dfile.encoding=UTF-8"
+  "-Dfile.encoding=UTF-8"
+  )
+
+
+
+  TOMCAT_APP_NAME_OPT=( sanguo admin timer talking server-1 server-2 )
+TOMCAT_HTTP_PORT_OPT=( 8080 8081 8082 8083 8085 8095  )
+HTTP_STATUS_OPT=( index.do login/login.jsp index.html test.jsp index.html index.html )
+APP_CONF_NAME_OPT=( server.properties log4j.properties )
+DIVIDING_LINE="----------------------------------------------------------------------------------------------------------"
+
+#TOMCAT_EZ_SETUP
+TOMCAT_SHUTDOWN_PORT_OPT=( 8000 8001 8002 8003 8005 8015 )
+TOMCAT_JMX_rmiRegistryPortPlatform_OPT=( 10000 10001 10002 10003 10005 10015 )
+TOMCAT_JMX_rmiServerPortPlatform_OPT=( 10100 10101 10102 10103 10105 10115 )
+TOMCAT_SERVERXML_WEBAPPSPATH_OPT=( sanguo admin timer talking server server )
+
+# tomcat服务重启是否删除日志
+# false:不删除日志
+# true:删除日志
+DEL_LOGS=true
+
+
+# 发布代码时是否备份war包
+# false:不备份
+# true:备份
+BACKUP_WAR=false
+
+# java特性文件
+APP_CONF_NAME_OPT=(
+  # java properties
+  "server.properties"
+  "log4j.properties"
+)
+
+
+
+
+
+
+
+
+
+0 */4 * * * /usr/sbin/ntpdate 0.rhel.pool.ntp.org
+0 6 * * * /usr/bin/ansible redis-control-center-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+1 6 * * * /usr/bin/ansible sdmp-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+2 6 * * * /usr/bin/ansible logistics-backstage* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+3 6 * * * /usr/bin/ansible org-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+4 6 * * * /usr/bin/ansible landmarkbi-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+5 6 * * * /usr/bin/ansible shopback-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+6 6 * * * /usr/bin/ansible baohe-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+7 6 * * * /usr/bin/ansible timeoutcenter-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+8 6 * * * /usr/bin/ansible payservice-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+9 6 * * * /usr/bin/ansible pay-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+10 6 * * * /usr/bin/ansible crm-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+11 6 * * * /usr/bin/ansible jobcenter-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+12 6 * * * /usr/bin/ansible auc-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+13 6 * * * /usr/bin/ansible analyzer-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+14 6 * * * /usr/bin/ansible config-center-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+15 6 * * * /usr/bin/ansible redis-control-center-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+16 6 * * * /usr/bin/ansible statistics-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+17 6 * * * /usr/bin/ansible msgcenter-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+18 6 * * * /usr/bin/ansible store-proxy-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+19 6 * * * /usr/bin/ansible tracker-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+20 6 * * * /usr/bin/ansible tmq-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +30 -exec /bin/rm -f {} \;'
+21 6 * * * /usr/bin/ansible searcher-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+22 6 * * * /usr/bin/ansible trade-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+23 6 * * * /usr/bin/ansible logistics-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+24 6 * * * /usr/bin/ansible allegan-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+25 6 * * * /usr/bin/ansible dataapi-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+26 6 * * * /usr/bin/ansible delivery-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +5 -exec /bin/rm -f {} \;'
+27 6 * * * /usr/bin/ansible market-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +5 -exec /bin/rm -f {} \;'
+28 6 * * * /usr/bin/ansible member-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+28 6 * * * /usr/bin/ansible itemcenter-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+
+
+
+代码质量管理平台上线 sonar.51xianqu.net
+mvn 项目配置文档：http://wiki.51xianqu.net/pages/viewpage.action?pageId=14647723
+gradle 项目配置文档：http://wiki.51xianqu.net/pages/viewpage.action?pageId=14647731
+
+
+sudo ln -s /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/usr/include /usr/include
+
+
+clean install sonar:sonar -Dmaven.test.failure.ignore=true -Dsonar.login=liangjian -Dsonar.password=07ming23#A -Dsonar.host.url=http://sonar.51xianqu.net
+clean install sonar:sonar -Dmaven.test.failure.ignore=true -Dsonar.host.url=http://sonar.51xianqu.net
+
+
+<build>
+  <pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.sonarsource.scanner.maven</groupId>
+        <artifactId>sonar-maven-plugin</artifactId>
+        <version>3.0.1</version>
+      </plugin>
+    </plugins>
+  </pluginManagement>
+</build>
+
+
+-I INPUT -p tcp --dport 80 -j DROP                                                                                                                                                                                                         
+-I INPUT -p tcp --dport 25 -j DROP                                                                                                                                                                                                       
+-I INPUT -s 115.236.161.16/28 -p tcp --dport 25 -j ACCEPT                                                                                                                                                                                  
+-I INPUT -s 124.160.28.144/29 -p tcp --dport 25 -j ACCEPT                                                                                                                                                                                  
+-I INPUT -s 10.0.0.0/8 -p tcp --dport 25 -j ACCEPT                                                                                                                                                                                         
+-I INPUT -s 115.236.161.16/28 -p tcp --dport 8080 -j ACCEPT                                                                                                                                                                                
+-I INPUT -s 124.160.28.144/29 -p tcp --dport 8080 -j ACCEPT                                                                                                                                                                                
+-I INPUT -s 10.0.0.0/8 -p tcp --dport 8080 -j ACCEPT      
+
+
+
+
+cd /data/www/conf
+ln -sf /usr/local/maven/conf/settings.xml
+cd /usr/local/maven/conf/
+mv settings.xml settings.xml.$(date +%Y%m%d-%R)
+wget http://res.51xianqu.net/software/mvn/settings.xml
+
+
+mvn clean install sonar:sonar -Dmaven.test.failure.ignore=true -Dsonar.login=liangjian -Dsonar.password=07ming23#A
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.117.198.248 market-tool-gray-tomcat-10.117.198.248 tomcat_market 'Template JMX Tomcat 6','Template JMX Generic'  10000 market-tool 8080
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.117.67.81 market-tool-tomcat-10.117.67.81 tomcat_market 'Template JMX Tomcat 6','Template JMX Generic'  10000 market-tool 8080
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.117.187.249 market-tool-tomcat-10.117.187.249 tomcat_market 'Template JMX Tomcat 6','Template JMX Generic'  10000 market-tool 8080
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.117.198.248 dw-tomcat-10.117.188.22 tomcat_dw 'Template JMX Tomcat 6','Template JMX Generic'  10000 dw 8080
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.117.188.22 dw-tomcat-10.117.188.22 tomcat_dw 'Template JMX Tomcat 6','Template JMX Generic'  10000 dw 8080
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.117.188.22 dw-tomcat-10.117.188.22 tomcat_dw 'Template JMX Tomcat 6','Template JMX Generic'  10000 dw 8080
+
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.162.78.138 procurement-tomcat-10.162.78.138 tomcat_procurement 'Template JMX Tomcat 6','Template JMX Generic'  10000 procurement 8080
+/usr/local/prometheus/tools/zabbix_api_tomcat.py 
+
+
+/usr/local/prometheus/tools/zabbix3_api_tomcat.py \
+--add-host 10.17.1.150 sdmp-daily hosts_daily 'Template OS Linux','Template JMX Generic'  10000 sdmp 8080
+
+
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.117.60.161  iris-api-tomcat-10.117.60.161  tomcat_iris-api 'Template JMX Tomcat 6','Template JMX Generic'  10000 iris-api 8080
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.132.9.58  iris-api-tomcat-10.132.9.58  tomcat_iris-api 'Template JMX Tomcat 6','Template JMX Generic'  10000 iris-api 8080
+
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.132.53.9 search-configcenter-tomcat-gray  tomcat_search 'Template JMX Tomcat 6','Template JMX Generic'  10000 search-configcenter 8080
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.132.9.185  search-configcenter-tomcat-1  tomcat_search 'Template JMX Tomcat 6','Template JMX Generic'  10000 search-configcenter 8080
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.117.206.225  search-configcenter-tomcat-2  tomcat_search 'Template JMX Tomcat 6','Template JMX Generic'  10000 search-configcenter 8080
+
+
+ /usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.132.52.145  search-dumpcenter-tomcat-gray  tomcat_search 'Template JMX Tomcat 6','Template JMX Generic'  10000 search-dumpcenter 8080
+
+
+
+
+ /usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.132.53.80  search-dumpcenter-tomcat-1  tomcat_search 'Template JMX Tomcat 6','Template JMX Generic'  10000 search-dumpcenter 8080
+ /usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.168.18.190  search-dumpcenter-tomcat-2  tomcat_search 'Template JMX Tomcat 6','Template JMX Generic'  10000 search-dumpcenter 8080
+ /usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.132.53.9 search-configcenter-tomcat-gray  tomcat_search 'Template JMX Tomcat 6','Template JMX Generic'  10000 search-configcenter 8080
+ /usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.132.9.185  search-configcenter-tomcat-1  tomcat_search 'Template JMX Tomcat 6','Template JMX Generic'  10000 search-configcenter 8080
+ /usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.117.206.225  search-configcenter-tomcat-2  tomcat_search 'Template JMX Tomcat 6','Template JMX Generic'  10000 search-configcenter 8080
+
+
+
+search-dumpcenter-gray
+search-dumpcenter-1
+search-dumpcenter-2
+search-configcenter-gray
+search-configcenter-1
+search-configcenter-2
+
+10.132.52.145
+10.132.53.80
+10.168.18.190
+10.132.53.9
+10.132.9.185
+10.117.206.225
+
+
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.117.67.51 sdb-tomcat-10.117.67.51 tomcat_procurement 'Template JMX Tomcat 6','Template JMX Generic'  10000 sdb 8080
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.117.198.189 sdb-gray-tomcat-10.117.198.189 tomcat_procurement 'Template JMX Tomcat 6','Template JMX Generic'  10000 sdb 8080
+
+
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.117.200.214 rate-tomcat-10.117.200.214 tomcat_rate 'Template JMX Tomcat 6','Template JMX Generic'  10000 rate 8080
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.117.17.25 rate-gray-tomcat-10.117.17.25 tomcat_rate 'Template JMX Tomcat 6','Template JMX Generic'  10000 rate 8080
+
+
+/usr/local/prometheus/bin/system/ezbackup -path=/data/www/stash_home
+
+
+yum install -y nss-pam-ldapd nslcd pam_ldap nss-pam-ldapd glibc-common nss-pam-ldapd sssd
+
+
+
+ldapsearch -x -w K4HVDQ9TJ9 -D 'uid=admin,ou=system' -b 'ou=users,ou=system' dn cn
+ldapsearch -x -w K4HVDQ9TJ9 -D 'uid=admin,ou=system' -b 'ou=groups,ou=system' dn cn
+
+ldapsearch -x -b 'cn=liangjian,ou=users,ou=system' dn cn
+
+
+mysqldump -usj -pd23e16c3ba1cefa998763f153bac3c7c  gameServer > /data/www/backups/gameServer.sql
+
+#!/bin/bash
+
+sudo bash
+cat << EOF > /etc/sysconfig/iptables
+# Firewall configuration written by system-config-firewall
+# Manual customization of this file is not recommended.
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+-A INPUT -p icmp -j ACCEPT
+-A INPUT -i lo -j ACCEPT
+
+# intral
+-A INPUT -s 10.0.0.0/8 -j ACCEPT
+
+# sshd
+-I INPUT -p tcp --dport 22 -j DROP
+-I INPUT -s 115.236.161.16/28 -p tcp --dport 22 -j ACCEPT
+-I INPUT -s 124.160.28.144/29 -p tcp --dport 22 -j ACCEPT
+-I INPUT -s 10.175.201.227/32 -p tcp --dport 22 -j ACCEPT
+-I INPUT -s 10.168.104.44/32 -p tcp --dport 22 -j ACCEPT
+-I INPUT -s 10.168.252.244/32 -p tcp --dport 22 -j ACCEPT
+-I INPUT -s 10.173.138.25/32 -p tcp --dport 22 -j ACCEPT
+
+# web
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 80 -j ACCEPT
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 443 -j ACCEPT
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 8080:8089 -j ACCEPT
+
+# debug
+-I INPUT -p tcp --dport 9999 -j DROP
+-I INPUT -s 115.236.161.16/28 -p tcp --dport 9999 -j ACCEPT
+-I INPUT -s 124.160.28.144/29 -p tcp --dport 9999 -j ACCEPT
+
+-A INPUT -j REJECT --reject-with icmp-host-prohibited
+-A FORWARD -j REJECT --reject-with icmp-host-prohibited
+COMMIT
+EOF
+
+chkconfig iptables on
+service iptables stop
+service iptables start6666666666666666666666
+
+
+
+/usr/local/mysql/bin/   ./mysql_install_db --defaults-file=/usr/local/mysql/etc/my.cnf  --datadir=/data/www/DB --basedir=/usr/local/mysql --user=mysql &
+
+#!/bin/bash
+# Mount the installer image
+hdiutil attach /Applications/Install\ OS\ X\ El\ Capitan.app/Contents/SharedSupport/InstallESD.dmg -noverify -nobrowse -mountpoint /Volumes/install_app
+
+# Create the ElCapitan Blank ISO Image of 7316mb with a Single Partition - Apple Partition Map
+hdiutil create -o /tmp/ElCapitan.cdr -size 7316m -layout SPUD -fs HFS+J
+
+# Mount the ElCapitan Blank ISO Image
+hdiutil attach /tmp/ElCapitan.cdr.dmg -noverify -nobrowse -mountpoint /Volumes/install_build
+
+# Restore the Base System into the ElCapitan Blank ISO Image
+asr restore -source ./BaseSystem.dmg -target /Volumes/install_build -noprompt -noverify -erase
+
+# Remove Package link and replace with actual files
+rm /Volumes/OS\ X\ Base\ System/System/Installation/Packages
+cp -rp /Volumes/install_app/Packages /Volumes/OS\ X\ Base\ System/System/Installation/
+
+# Copy El Capitan installer dependencies
+cp -rp /Volumes/install_app/BaseSystem.chunklist /Volumes/OS\ X\ Base\ System/BaseSystem.chunklist
+cp -rp /Volumes/install_app/BaseSystem.dmg /Volumes/OS\ X\ Base\ System/BaseSystem.dmg
+
+# Unmount the installer image
+hdiutil detach /Volumes/install_app
+
+# Unmount the ElCapitan ISO Image
+hdiutil detach /Volumes/OS\ X\ Base\ System/
+
+# Convert the ElCapitan ISO Image to ISO/CD master (Optional)
+hdiutil convert /tmp/ElCapitan.cdr.dmg -format UDTO -o /tmp/ElCapitan.iso
+
+# Rename the ElCapitan ISO Image and move it to the desktop
+mv /tmp/ElCapitan.iso.cdr ~/Desktop/ElCapitan.iso
+
+Now ensure that the script file has execute permissions by running chmod +x ElCapitan.sh and run with sh ./ElCapitan.sh. This will take some time, so just be patient. Once done it should have created a file called ElCapitan.iso on your desktop.
+
+
+
+
+
+[hosts-Cleanuplog-production]
+redis-control-center-production
+sdmp-production
+logistics-backstage-production
+org-production
+landmarkbi-production
+shopback-production
+baohe-production
+timeoutcenter-production
+payservice-production
+pay-production
+crm-production
+jobcenter-production
+auc-production
+analyzer-production
+config-center-production
+
+statistics-production
+msgcenter-production
+store-proxy-production
+tracker-production
+tmq-production
+searcher-production
+trade-production
+centralbank-production
+logistics-production
+allegan-production
+itemcenter-production
+dataapi-production
+# shop-*
+delivery-production
+market-production
+member-production
+
+杭州鲜趣闪购网络技术有限公司
+0 6 * * * /usr/bin/ansible redis-control-center-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+1 6 * * * /usr/bin/ansible sdmp-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+2 6 * * * /usr/bin/ansible logistics-backstage* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+3 6 * * * /usr/bin/ansible org-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+4 6 * * * /usr/bin/ansible landmarkbi-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+5 6 * * * /usr/bin/ansible shopback-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+6 6 * * * /usr/bin/ansible baohe-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+7 6 * * * /usr/bin/ansible timeoutcenter-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+8 6 * * * /usr/bin/ansible payservice-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+9 6 * * * /usr/bin/ansible pay-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+10 6 * * * /usr/bin/ansible crm-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+11 6 * * * /usr/bin/ansible jobcenter-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+12 6 * * * /usr/bin/ansible auc-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+13 6 * * * /usr/bin/ansible analyzer-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+14 6 * * * /usr/bin/ansible config-center-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+15 6 * * * /usr/bin/ansible redis-control-center-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+
+16 6 * * * /usr/bin/ansible statistics-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+17 6 * * * /usr/bin/ansible msgcenter-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+18 6 * * * /usr/bin/ansible store-proxy-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+19 6 * * * /usr/bin/ansible tracker-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+20 6 * * * /usr/bin/ansible tmq-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+21 6 * * * /usr/bin/ansible searcher-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+22 6 * * * /usr/bin/ansible trade-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+23 6 * * * /usr/bin/ansible logistics-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+24 6 * * * /usr/bin/ansible allegan-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+25 6 * * * /usr/bin/ansible dataapi-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+26 6 * * * /usr/bin/ansible delivery-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+27 6 * * * /usr/bin/ansible market-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+28 6 * * * /usr/bin/ansible member-* -sudo -a '/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +8 -exec /bin/rm -f {} \;'
+
+
+
+
+
+
+[hosts-Cleanuplog-gray]
+redis-control-center-*
+sdmp-*
+logistics-backstage-*
+org-production-*
+landmarkbi-*
+shopback-*
+baohe-*
+timeoutcenter-*
+payservice-*
+pay-*
+crm-*
+jobcenter-*
+auc-*
+analyzer-*
+config-center-*
+statistics-*
+msgcenter-*
+store-proxy-*
+tracker-*
+tmq-*
+searcher-*
+trade-*
+centralbank-*
+logistics-*
+allegan-*
+itemcenter-*
+dataapi-*
+# shop-*
+delivery-*
+market-*
+member-*
+
+
+
+clean package -Dmaven.test.skip=true -e -Pgray -U
+clean package -Dmaven.test.skip=true -e -Pproduction -U
+
+
+
+
+/sbin:/bin:/usr/sbin:/usr/bin
+
+
+/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/prometheus/bin:/usr/local/prometheus/bin/system:/usr/local/prometheus/tools:/usr/java/jdk/bin
+
+
+
+
+sudo mkdir -p /data/www/logs/apps/monitor
+sudo chown -R tomcat.tomcat /data/www/logs/apps/monitor
+grep  '(autoDeploy|defaultHost)' /usr/local/tomcat7-8080-not_install/conf/server.xml
+http://121.40.200.134:8080/webStatus
+http://{HOST.IP}:{$HTTP_PORT}/webStatus
+jsvc.exec -java-home /usr/java/jdk -user tomcat -pidfile /data/www/logs/apps/8080-market/tomcat/catalina-daemon.pid -wait 10 -outfile /data/www/logs/apps/8080-market/tomcat/catalina-daemon.2015-09-10.log -errfile &1 -classpath /usr/local/tomcat7-8080-market/bin/bootstrap.jar:/usr/local/tomcat7-8080-market/bin/commons-daemon.jar:/usr/local/tomcat7-8080-market/bin/tomcat-juli.jar -Dnop -server -Xms5120m -Xmx5120m -Xmn1280m -Xss256k -XX:PermSize=96m -XX:MaxPermSize=256m -verbose:gc -Xloggc:/data/www/temp/gc.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/data/www/temp -XX:+DisableExplicitGC -XX:+UseConcMarkSweepGC -XX:+UseCMSCompactAtFullCollection -XX:+CMSClassUnloadingEnabled -XX:CMSInitiatingOccupancyFraction=80 -Dfile.encoding=UTF-8 -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager -Dcom.sun.management.jmxremote -Djava.rmi.server.hostname=10.175.205.86 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dfoo.jmx=true -Dfoo.jmx.detailed=true -Djava.endorsed.dirs= -Dcatalina.base=/usr/local/tomcat7-8080-market -Dcatalina.home=/usr/local/tomcat7-8080-market -Djava.io.tmpdir=/usr/local/tomcat7-8080-market/temp org.apache.catalina.startup.Bootstrap
+
+
+./configure  '--prefix=/usr/local/php' '--with-config-file-path=/usr/local/php/etc' '--enable-fpm' '--enable-bcmath=shared' '--with-pdo_sqlite=shared' '--with-gettext=shared' '--with-iconv=shared' '--enable-ftp=shared' '--with-sqlite=shared' '--with-sqlite3=shared' '--enable-mbstring=shared' '--enable-sockets=shared' '--enable-zip' '--enable-soap=shared' '--with-openssl' '--with-zlib' '--with-curl=shared' '--with-gd=shared' '--with-jpeg-dir' '--with-png-dir' '--with-freetype-dir' '--with-mcrypt=shared' '--with-mhash=shared' '--with-mysql=mysqlnd' '--with-mysqli=shared,mysqlnd' '--with-pdo-mysql=shared,mysqlnd' '--without-pear' '--with-libdir=lib64' '--disable-fileinfo' '--enable-bcmath' '--enable-sockets' '--with-gettext' '--with-ldap'
+
+
+
+./configure --prefix=/usr/local/nginx \
+--with-http_ssl_module --with-openssl=/data/www/software/EZHTTP-master/soft/openssl-1.0.2d \
+ --with-http_sub_module \
+--with-http_stub_status_module \
+--with-pcre --with-pcre=/data/www/software/EZHTTP-master/soft/pcre-8.33 \
+--with-http_secure_link_module \
+--with-zlib=/data/www/software/EZHTTP-master/soft/zlib-1.2.8 \
+--with-http_stub_status_module --add-module=/data/www/software/nginx_upstream_check_module-master
+
+
+
+     upstream upstream.song.52shangou.com {
+         server 10.117.13.142:80;
+     }
+
+
+    server {
+        listen 80;
+        server_name localhost;
+               # analyzer proxy
+       location ~ ^/analyzer/ {
+          proxy_pass     http://analyzer.52shangou.com;
+          proxy_set_header       X-Real-IP $remote_addr;
+          proxy_set_header       X_FORWARDED_PROTO https;
+          proxy_set_header       X-Forwarded-For $remote_addr;
+          proxy_set_header       X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header       Host $host;
+          proxy_redirect         off;
+       }
+
+     }
+
+
+
+configure arguments: --prefix=/usr/local/nginx --with-http_ssl_module 
+--with-openssl=/data/www/software/EZHTTP-master/soft/openssl-1.0.2d 
+--with-http_sub_module --with-http_stub_status_module 
+--with-pcre --with-pcre=/data/www/software/EZHTTP-master/soft/pcre-8.33 
+--with-zlib=/data/www/software/EZHTTP-master/soft/zlib-1.2.8 --with-http_secure_link_module
+
+
+./configure --prefix=/usr/local/nginx 
+--with-http_ssl_module --
+with-openssl= —with-http_sub_module 
+--with-http_stub_status_module 
+—with-pcre —with-zlib= —with-http_secure_lin    k_module —with-http_stub_status_module —add-module=/data/www/software/nginx_upstream_check_module-master
+
+
+/usr/bin/find /data/www/logs/apps -type f -name "*.201*-*-*" -mtime +15 -exec /bin/rm -f {} \;
+/usr/bin/find 
+
+find ./ -type f -name "*.2015-*-*.log" -mtime +10 -exec rm -f {} \;
+
+
+2015-09-07 14:33:13 606    
+SearchController.searchShop:0,0,0,0,0,0  
+SEARCH_LANDMARK:0,0,0,0,0,0  
+SEARCH_SHOP:0,0,0,0,0,0  
+SearchController.searchLandMark:0,0,0,0,0,0  
+SearchController.locate:0,0,0,0,0,0  
+DB_LANDMARK_BY_ID:0,0,0,0,0,0  
+
+
+       # itemcenter proxy
+       location ~ /itemcenter/ {
+           proxy_pass     http://upstream-itemcenter.52shangou.com;
+           proxy_set_header       X-Real-IP $remote_addr;
+           proxy_set_header       X_FORWARDED_PROTO https;
+           proxy_set_header       X-Forwarded-For $remote_addr;
+           proxy_set_header       X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header       Host $host;
+           proxy_redirect         off;
+       }
+
+
+/itemcenter/open/home/getCats.do?
+
+
+upstream-itemcenter.52shangou.com
+
+                    /itemcenter/open/home/getItems.do
+                    /itemcenter/open/list/getCats.do
+                    /itemcenter/open/list/getItems.do?
+
+        location ~* /itemcenter/open/home/getCats.do) {
+
+                location ~* /itemcenter/open/(home|list)/(getCats.do|getItems.do) {
+
+              proxy_cache  cache_one;
+              proxy_cache_key "$host:$server_port$request_uri$is_args$args";
+              proxy_cache_valid  200 301 302 10m; 
+              proxy_set_header           X-Real-IP $remote_addr;
+              proxy_set_header           X_FORWARDED_PROTO https;
+              proxy_set_header           X-Forwarded-For $remote_addr;
+              proxy_set_header           X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header           Host $host;
+              proxy_redirect                off;
+              proxy_read_timeout  1200;
+
+              if ($uid != '-') {
+                  proxy_pass http://10.252.81.198:8080;
+              }   
+              if ($machine != '-') {
+                      #cn14
+                      proxy_pass http://10.252.162.69:8080;
+              }   
+              if ($pre_machine_id != '-') {
+                      proxy_pass $pre_machine_proxy_pass;
+              }   
+
+              proxy_pass http://upstream-itemcenter.52shangou.com;
+              add_header X-Cache '$upstream_cache_status from $host';
+              add_header X-Cache-upsteam-addr '$upstream_addr';
+        }  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+allegan(api)  39   14    11
+centralbank   3
+dataapi   17 22
+itemcenter  50 25 32 45
+logistics 33 58
+trade 32 142
+
+
+allegan(api)  14
+centralbank  0
+dataapi   14
+itemcenter  15 7 5 10 1 18
+logistics 60 34
+trade 30 67 65
+
+
+
+#!/bin/bash
+./configure \
+--prefix=/usr/local/php \
+--with-config-file-path=/usr/local/php/etc \
+--enable-inline-optimization \
+--disable-debug \
+--disable-rpath \
+--enable-shared \
+--enable-opcache \
+--enable-fpm \
+--with-fpm-user=www \
+--with-fpm-group=www \
+--with-mysql=mysqlnd \
+--with-mysqli=mysqlnd \
+--with-pdo-mysql=mysqlnd \
+--with-gettext \
+--enable-mbstring \
+--with-iconv \
+--with-mcrypt \
+--with-mhash \
+--with-openssl \
+--enable-bcmath \
+--enable-soap \
+--with-libxml-dir \
+--enable-pcntl \
+--enable-shmop \
+--enable-sysvmsg \
+--enable-sysvsem \
+--enable-sysvshm \
+--enable-sockets \
+--with-curl \
+--with-zlib \
+--enable-zip \
+--with-gd \
+--enable-exif
+
+
+
+
+--prefix=/usr/local/php --with-config-file-path=/usr/local/php/etc --enable-fpm --enable-bcmath=shared --with-pdo_sqlite=shared --with-gettext=shared --with-iconv=shared --enable-ftp=shared --with-sqlite=shared --with-sqlite3=shared --enable-mbstring=shared --enable-sockets=shared --enable-zip --enable-soap=shared --with-openssl --with-zlib --with-curl=shared --with-gd=shared --with-jpeg-dir --with-png-dir --with-freetype-dir --with-mcrypt=shared --with-mhash=shared --with-mysql=mysqlnd --with-mysqli=shared,mysqlnd --with-pdo-mysql=shared,mysqlnd --without-pear --with-libdir=lib64 --disable-fileinfo --enable-bcmath --enable-sockets --with-gettext
+
+
+
+
+
+--with-readline
+
+
+./configure --enable-server --enable-proxy --enable-agent --enable-java --perfix=/usr/local/zabbix/ --with-mysql=/usr/local/mysql/bin/mysql_config --with-net-snmp --with-libcurl
+
+./configure --prefix=/usr/local/zabbix --with-mysql=/usr/local/mysql/bin/mysql_config --with-net-snmp --with-libcurl --enable-server --enable-agent --enable-prox --enable-java
+
+
+{tomcats:[
+	{"tomcatName":"tomcat1","httpPort":"8080","shundownPort":"8000"}
+
+	]
+}
+
+
+
+sqlite3 /tmp/flaskr.db < schema.sql
+
+
+SDATH="/usr/local/rsync"
+SSTART='./bin/rsync --daemon  --config='${SDATH}/rsyncd.conf
+SPID=`ps -ef | grep './bin/rsync' | grep -v 'grep' | grep -v 'rsyncd' | awk '{print $2}'`
+
+
+
+mkdir -p /usr/local/msmtp/etc
+./configure --prefix=/usr/local/msmtp --sysconfdir=/usr/local/msmtp/etc
+make && make install
+
+
+deployment_project -tomcat.app.name=test1 -tomcat.project.deployment.pkg.download.url=http://res.swomc.net/test/demo-1.0.0.war 
+-tomcat.project.conf.download.url=http://res.swomc.net/test/ 
+-tomcat.project.conf.download.name=log4j.properties:server.properties 
+-tomcat.service.restart=true
+
+
+
+deployment_project -tomcat.app.name=aaa -tomcat.project.deployment.pkg.download.url=http://view:111@package.shunwang.com/svn/aplus/icafebutler-monitor-T/2015-06-02_17-27-29/21/icafebutler-monitor.war -tomcat.project.conf.download.url=http://res.swomc.net/test/ -tomcat.project.conf.download.name=log4j.properties:server.properties -tomcat.service.restart=true
+
+cat ar/logeck.log  |awk '{print $5}'|grep -Eo "[0-9]+"|awk '{if(NR%10){ORS=" "}else{ORS="\n"};print;}'
+
+
+# Firewall configuration written by system-config-firewall
+# Manual customization of this file is not recommended.
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+-A INPUT -p icmp -j ACCEPT
+-A INPUT -i lo -j ACCEPT
+
+# sshd
+-I INPUT -p tcp --dport 22 -j DROP
+-I INPUT -s 192.168.111.119/32 -p tcp --dport 22 -j ACCEPT
+-I INPUT -s 192.168.111.121/32 -p tcp --dport 22 -j ACCEPT
+-I INPUT -s 192.168.111.122/32 -p tcp --dport 22 -j ACCEPT
+-I INPUT -s 172.16.15.176/32 -p tcp --dport 22 -j ACCEPT
+-I INPUT -s 172.16.24.170/32 -p tcp --dport 22 -j ACCEPT
+
+# pureftpd
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 20:21 -j ACCEPT
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 10021:10026 -j ACCEPT
+
+# nginx
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 80 -j ACCEPT
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 443 -j ACCEPT
+# zabbix_agentd
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 10050 -j ACCEPT
+
+# tomcat & jmx
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 8080:8089 -j ACCEPT
+#-A INPUT -m state --state NEW -m tcp -p tcp --dport 10000:10009 -j ACCEPT
+-I INPUT -p tcp --dport 10000:10009 -j DROP
+-I INPUT -s 10.0.0.0/8 -p tcp --dport 10000:10009 -j ACCEPT
+#-A INPUT -m state --state NEW -m tcp -p tcp --dport 10100:10109 -j ACCEPT
+-I INPUT -p tcp --dport 10100:10109 -j DROP
+-I INPUT -s 10.0.0.0/8 -p tcp --dport 10100:10109 -j ACCEPT
+
+# memcached
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 11211 -j ACCEPT
+
+# redis
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 6379  -j ACCEPT
+
+# activemq
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 1099 -j ACCEPT
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 1616 -j ACCEPT
+
+# mysql
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 3306 -j ACCEPT
+
+-A INPUT -j REJECT --reject-with icmp-host-prohibited
+-A FORWARD -j REJECT --reject-with icmp-host-prohibited
+COMMIT
+
+
+
+10.171.202.93===22===root===Xianqu52===None
+#VALUE!
+10.168.76.95===22===root===Xianqu52===None
+#VALUE!
+10.175.205.86===22===root===Xianqu52===None
+#VALUE!
+10.51.24.113===22===root===Xianqu52===None
+#VALUE!
+10.252.144.3===22===root===Xianqu52===None
+#VALUE!
+10.251.251.137===22===root===Xianqu52===None
+#VALUE!
+10.168.223.128===22===root====hVsqfu(+M~OMFl===None
+
+10.168.222.76===22===root===9h#zKhqOh4!BK5y===None
+10.168.22.195===22===root===I#JU~il~=.hbfBV===None
+10.252.120.4===22===root===Shequo2o2014===None
+10.168.252.244===22===root===Shequo2o2014===None
+10.117.34.94===22===root===Shequo2o2014===None
+10.252.162.69===22===root===Shequo2o2014===None
+10.169.5.150===22===root===Shequo2o2014===None
+10.168.73.50===22===root===Shequo2o2014===None
+10.252.80.118===22===root===Shequo2o2014===None
+10.168.230.160===22===root===Shequo2o2014===None
+10.168.255.56===22===root===Shequo2o2014===None
+10.252.163.83===22===root===Shequo2o2014===None
+10.171.244.143===22===root===Shequo2o2014===None
+10.168.241.190===22===root===Shequo2o2014===None
+10.251.238.209===22===root===Shequo2o2014===None
+10.251.240.232===22===root===Shequo2o2014===None
+10.165.100.113===22===root===Shequo2o2014===None
+10.175.206.143===22===root===Shequo2o2014===None
+10.251.240.8===22===root===Shequo2o2014===None
+10.168.86.76===22===root===Shequo2o2014===None
+10.168.82.61===22===root===Shequo2o2014===None
+10.168.243.64===22===root===Shequo2o2014===None
+10.252.95.95===22===root===Shequo2o2014===None
+10.175.202.168===22===root===Shequo2o2014===None
+10.168.68.44===22===root===Shequo2o2014===None
+10.168.83.108===22===root===Shequo2o2014===None
+10.171.215.132===22===root===Shequo2o2014===None
+10.51.2.235===22===root===Shequo2o2014===None
+10.171.232.162===22===root===Shequo2o2014===None
+10.252.81.198===22===root===c%A~UX%dI3VtOX]===None
+10.117.208.189===22===root===$IR~Xu60]Kl3WNm===None
+#VALUE!
+#VALUE!
+#VALUE!
+#VALUE!
+10.51.1.200===22===root===Shequo2o2014===None
+10.252.82.210===22===root===Shequo2o2014===None
+10.252.97.33===22===root===Shequo2o2014===None
+10.117.210.131===22===root===Shequo2o2014===None
+10.252.253.16===22===root===Shequo2o2014===None 
+10.171.229.204===22===root===Shequo2o2014===None
+10.171.238.8===22===root===Shequo2o2014===None
+10.171.202.73===22===root===Shequo2o2014===None
+10.117.35.225===22===root===Shequo2o2014===None
+10.117.39.136===22===root===Shequo2o2014===None
+10.174.105.204===22===root===Shequo2o2014===None
+10.168.217.161===22===root===Shequo2o2014===None
+10.51.7.53===22===root===Shequo2o2014===None
+
+
+
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.222.76 10.168.222.76 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.22.195 10.168.22.195 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.252.120.4 10.252.120.4 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.252.244 10.168.252.244 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.117.34.94 10.117.34.94 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.252.162.69 10.252.162.69 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.169.5.150 10.169.5.150 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.73.50 10.168.73.50 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.252.80.118 10.252.80.118 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.230.160 10.168.230.160 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.255.56 10.168.255.56 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.252.163.83 10.252.163.83 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.171.244.143 10.171.244.143 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.241.190 10.168.241.190 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.251.238.209 10.251.238.209 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.251.240.232 10.251.240.232 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.165.100.113 10.165.100.113 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.175.206.143 10.175.206.143 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.251.240.8 10.251.240.8 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.86.76 10.168.86.76 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.82.61 10.168.82.61 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.243.64 10.168.243.64 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.252.95.95 10.252.95.95 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.175.202.168 10.175.202.168 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.68.44 10.168.68.44 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.83.108 10.168.83.108 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.171.215.132 10.171.215.132 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.51.2.235 10.51.2.235 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.171.232.162 10.171.232.162 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.252.81.198 10.252.81.198 51xianqu-hosts 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.117.208.189 10.117.208.189 51xianqu-hosts 'Template OS Linux'
+
+
+BSVR-IOUZ-AZA7-0N83
+120.26.51.226===22===root===Shequo2o2014===None
+
+
+
+121.41.36.124===22===root===^eCgILuZSO=-qWu===None
+#120.26.101.158===22===root===c%A~UX%dI3VtOX]===None
+#21.41.105.129===22===root===vj@%BMo2~A6kd0A===None
+#120.55.99.128===22===root===$IR~Xu60]Kl3WNm===None
+#121.43.146.239===22===root====hVsqfu(+M~OMFl===None
+#121.41.97.193===22===root===9h#zKhqOh4!BK5y===None
+#121.40.165.113===22===root===I#JU~il~=.hbfBV===None
+
+
+buyer_daily: 121.41.36.124   ^eCgILuZSO=-qWu 
+buyer_gray: 120.26.101.158  c%A~UX%dI3VtOX] 
+seller-daily-hz: 21.41.105.129  vj@%BMo2~A6kd0A 
+seller-daily: 120.55.99.128   $IR~Xu60]Kl3WNm 
+seller_gray:  121.43.146.239     =hVsqfu(+M~OMFl 
+禅道(task): 121.41.97.193    9h#zKhqOh4!BK5y 
+gitlab:  121.40.165.113  I#JU~il~=.hbfBV
+
+
+
+10.132.54.171===22===root===shequo2o2014===None
+10.168.68.44===22===root===Shequo2o2014===None
+10.175.202.168===22===root===Shequo2o2014===None
+10.165.100.113===22===root===Shequo2o2014===None
+10.117.34.94===22===root===Shequo2o2014===None
+10.132.13.171===22===root===Shequo2o2014===None
+10.252.253.16===22===root===Shequo2o2014===None
+10.117.210.131===22===root===Shequo2o2014===None
+10.252.136.75===22===root===Shequo2o2014===None
+10.51.1.200===22===root===Shequo2o2014===None
+
+
+
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.68.44 seller-10.168.68.44 51xianqu-hosts,'seller(交易)' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.175.202.168 seller-10.175.202.168 51xianqu-hosts,'seller(交易)' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.165.100.113 seller-redis-master-10.165.100.113 51xianqu-hosts,'seller(交易)' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.117.34.94 seller-redis-slave-10.117.34.94 51xianqu-hosts,'seller(交易)' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.132.13.171 seller-o2o-mysql-master-10.132.13.171 51xianqu-hosts,'seller(交易)' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.252.253.16 seller-o2o-mysql-slave-10.252.253.16 51xianqu-hosts,'seller(交易)' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.117.210.131 seller-o2o-mysql-slave-10.117.210.131 51xianqu-hosts,'seller(交易)' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.252.136.75 seller-poi-mysql-master-10.252.136.75 51xianqu-hosts,'seller(交易)' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.51.1.200 seller-poi-mysql-slave-10.51.1.200 51xianqu-hosts,'seller(交易)' 'Template OS Linux'
+
+
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.117.38.34 item-redis-master 51xianqu-hosts,redis 'Template OS Linux','Template Redis'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.2.40  item-redis-slave 51xianqu-hosts,redis 'Template OS Linux','Template Redis'
+
+
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.117.49.195 search-cluster2 51xianqu-hosts,'search(搜索)' 'Template OS Linux'
+
+
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.252.147.80 search-cluster1 51xianqu-hosts,'search(搜索)' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.171.210.31 search-engine-cluster1-node1 51xianqu-hosts,'search(搜索)' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.175.206.143 search-engine-cluster1-node2 51xianqu-hosts,'search(搜索)' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.251.240.232 search-engine-cluster2-node1 51xianqu-hosts,'search(搜索)' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.251.238.209 search-engine-cluster2-node2 51xianqu-hosts,'search(搜索)' 'Template OS Linux'
+
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.51.2.199 api-gray-10.51.2.199 51xianqu-hosts,'api' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.225.227 api-proxy-10.168.225.227 51xianqu-hosts,'api' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.252.119.214 api-release-10.252.119.214 51xianqu-hosts,'api' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.251.234.225 api-release-10.251.234.225 51xianqu-hosts,'api' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.22.195 gitlab-10.168.22.195 51xianqu-hosts,'api' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.222.76 task-10.168.222.76 51xianqu-hosts,'api' 'Template OS Linux'
+
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.252.244 seller-daily-10.168.252.244 51xianqu-hosts,'seller(交易)' 'Template OS Linux'
+
+
+
+ 34     log_format timed_combined '$remote_addr - $remote_user [$time_local]  '
+ 35                               '"$request" $status $body_bytes_sent '
+ 36                               '"$http_referer" "$http_user_agent" "$http_x_forwarded_for" '
+ 37                               '$request_time $upstream_response_time $upstream_addr $pipe';
+
+
+
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.117.13.142 shandianxia-daily-10.117.13.142 51xianqu-hosts,'shandianxia' 'Template OS Linux'
+
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.252.100.98 config-center-daily-10.252.100.98 51xianqu-hosts,'config-center' 'Template OS Linux'
+
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.117.45.53 config-center-10.117.45.53 51xianqu-hosts,'config-center' 'Template OS Linux'
+
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.143.107 item-center-daily-10.168.143.107 51xianqu-hosts,'item-center' 'Template OS Linux'
+
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.169.13.201 item-center-10.169.13.201 51xianqu-hosts,'item-center' 'Template OS Linux'
+
+
+
+
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.252.80.182 trade-gray-10.252.80.182 51xianqu-hosts,'trade(新版交易)' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.252.126.68 logistics-gray-10.252.126.68 51xianqu-hosts,'logistics(物流)' 'Template OS Linux'
+
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.251.234.225 allegan-tomcat-10.251.234.225 51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10000 allegan 8080
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.252.119.214 allegan-tomcat-10.252.119.214 51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10000 allegan 8080
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.117.25.226 allegan-daily-tomcat-10.117.25.226 51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10000 allegan 8080
+
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.252.163.83 crm-tomcat-10.252.163.83 tomcat_crm 'Template JMX Tomcat 6','Template JMX Generic'  10000 crm 8080
+
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.117.45.53 config-center-tomcat-10.117.45.53 tomcat_all,tomcat_config-center 'Template JMX Tomcat 6','Template JMX Generic'  10000 config-center 7001
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.171.241.33 config-center-tomcat-10.171.241.33 tomcat_all,tomcat_config-center 'Template JMX Tomcat 6','Template JMX Generic'  10000 config-center 7001
+
+
+
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.252.126.68 logistics-gray-tomcat-10.252.126.68 51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10002 logistics 8082
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.161.221.131 auc-tomcat-10.161.221.131 tomcat_auc 'Template JMX Tomcat 6','Template JMX Generic'  10000 auc 8080
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.252.126.68 auc-tomcat-10.252.126.68 51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10000 auc 8080
+
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.252.95.95 shop-10.252.95.95 tomcat_shop 'Template JMX Tomcat 6','Template JMX Generic'  10000 shop 8080
+
+
+
+dell r630 e5-2640v3*2 内存256GB(16GB*8)  SATA2T(RAID卡支持RAID5/6)*12 单电源 企业版iDRAC 集成4口千兆网卡 5年保修  1台
+
+
+
+pool_mysql  tcp  pid
+
+10.168.122.58===22===xqadmin===None===2e8c1032a85bfef91769f2dcdd80e2f3
+10.252.94.232===22===xqadmin===None===2e8c1032a85bfef91769f2dcdd80e2f3
+
+
+sudo ansible trade -sudo -a '/usr/local/prometheus/bin/deployment_project -tomcat.app.name=trade -tomcat.project.deployment.pkg.download.url=http://res.51xianqu.net/deploy_res/trade/pkg/trade.war -tomcat.project.conf.download.url=http://res.51xianqu.net/deploy_res/trade/ -tomcat.project.conf.download.name=server.properties'
+sudo ansible trade-daily -sudo -a '/usr/local/prometheus/bin/deployment_project -tomcat.app.name=trade -tomcat.project.deployment.pkg.download.url=http://res.51xianqu.net/deploy_res/trade-daily/pkg/trade.war -tomcat.project.conf.download.url=http://res.51xianqu.net/deploy_res/trade-daily/ -tomcat.project.conf.download.name=server.properties'
+sudo ansible trade-gray -sudo -a '/usr/local/prometheus/bin/deployment_project -tomcat.app.name=trade -tomcat.project.deployment.pkg.download.url=http://res.51xianqu.net/deploy_res/trade-gray/pkg/trade.war -tomcat.project.conf.download.url=http://res.51xianqu.net/deploy_res/trade-gray/ -tomcat.project.conf.download.name=server.properties:logback.xml'
+
+
+cd /data/www/ROOT/static/deploy_res/logistics-gray/pkg
+mv logistics-web*.war logistics.war
+sudo ansible logistics-gray -sudo -a '/usr/local/prometheus/bin/deployment_project -tomcat.app.name=trade -tomcat.project.deployment.pkg.download.url=http://res.51xianqu.net/deploy_res/logistics-gray/pkg/logistics.war -tomcat.project.conf.download.url=http://res.51xianqu.net/deploy_res/logistics-gray/ -tomcat.project.conf.download.name=server.properties:logback.xml'
+sudo ansible logistics-gray -sudo -a '/usr/local/prometheus/bin/tomcat logistics restart'
+sudo rm -f /data/www/ROOT/static/deploy_res/logistics-gray/pkg/*.war
+
+
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.117.43.240 msg-center-10.117.43.240 51xianqu-hosts,'msg-center' 'Template OS Linux'
+
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.252.251.186 trade-10.252.251.186 51xianqu-hosts,'trade(新版交易)' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.57.209 trade-10.168.57.209 51xianqu-hosts,'trade(新版交易)' 'Template OS Linux'
+
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.90.38  logistics-10.168.90.38 51xianqu-hosts,'logistics(物流)' 'Template OS Linux'
+
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.168.90.38 logistics-tomcat-10.168.90.38 51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10002 logistics 8082
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.252.162.69 logistics-tomcat-10.252.162.69 51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10002 logistics 8082
+
+
+80   delivery
+8086 itemcenter
+8089 market
+
+
+
+./configure  '--prefix=/usr/local/php' '--with-config-file-path=/usr/local/php/etc' '--enable-fpm' '--enable-bcmath=shared' '--with-pdo_sqlite=shared' '--with-gettext=shared' '--with-iconv=shared' '--enable-ftp=shared' '--with-sqlite=shared' '--with-sqlite3=shared' '--enable-mbstring=shared' '--enable-sockets=shared' '--enable-zip' '--enable-soap=shared' '--with-openssl' '--with-zlib' '--with-curl=shared' '--with-gd=shared' '--with-jpeg-dir' '--with-png-dir' '--with-freetype-dir' '--with-mcrypt=shared' '--with-mhash=shared' '--with-mysql=mysqlnd' '--with-mysqli=shared,mysqlnd' '--with-pdo-mysql=shared,mysqlnd' '--without-pear' '--with-libdir=lib64' '--disable-fileinfo' '--enable-bcmath' '--enable-sockets' '--with-gettext'
+
+
+
+# mysql
+UserParameter=pool.server.keepalive.count,/bin/netstat -anto |grep :3306 | grep keepalive | wc -l
+
+
+dataapi-daily	10.168.219.231
+dataapi	10.173.141.7
+dataapi	10.173.139.224
+dataapi-gray	10.252.114.66
+
+
+
+
+
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.219.231  dataapi-daily-10.168.219.231 51xianqu-hosts,'dataapi' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.173.141.7  dataapi-10.173.141.7 51xianqu-hosts,'dataapi' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.173.139.224  dataapi-10.173.139.224 51xianqu-hosts,'dataapi' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.252.114.66  dataapi-gray-10.252.114.66 51xianqu-hosts,'dataapi' 'Template OS Linux'
+
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.173.141.7 dataapi-tomcat-10.173.141.7 51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10000 dataapi 8080
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.173.139.224 dataapi-tomcat-10.173.139.224 51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10000 dataapi 8080
+
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.168.243.64 config-center-gray-tomcat-10.168.243.64 tomcat_config-center 'Template JMX Tomcat 6','Template JMX Generic'  10000 config-center 7001
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.117.43.240 msg-center-tomcat-10.117.43.240 tomcat_msg-center 'Template JMX Tomcat 6','Template JMX Generic'  10000 msg-center 8080
+
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.171.238.8 statistics-tomcat-10.168.95.9 tomcat_statistics 'Template JMX Tomcat 6','Template JMX Generic'  10000 statistics 8080
+
+         # itemcenter system proxy
+         location ^~ /itemcenter/ {
+                 proxy_pass http://10.168.143.107:8086;
+                 proxy_set_header           X-Real-IP $remote_addr;
+                 proxy_set_header           X-Forwarded-For $remote_addr;
+                 proxy_set_header           X_FORWARDED_PROTO https;
+                 proxy_set_header           X-Forwarded-For $proxy_add_x_forwarded_for;
+                 proxy_set_header           Host $host;
+                 proxy_redirect                off;
+         }
+
+
+
+curl -d "appid=1000&mobiles=13456768044&content=test&sign=94dcec6f1d296ce4b11e7dde551c120b" http://10.171.238.8:7001/msgcenter/internal/sendSms
+
+
+
+
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.117.42.94  shop-daily-10.117.42.94  51xianqu-hosts,'shop' 'Template OS Linux'
+
+delivery-daily	key	delivery	daily	投放	121.43.115.169		10.117.38.231
+delivery-gray	key	delivery	gray	投放	121.43.233.138		10.251.234.109
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.117.38.231  delivery-daily-10.117.38.231  51xianqu-hosts,'delivery(投放)' 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.251.234.109  delivery-gray-10.251.234.109  51xianqu-hosts,'delivery(投放)' 'Template OS Linux'
+
+
+
+
+
+
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.175.201.227 blj-yangqiuhua  51xianqu-hosts,'public' 'Template OS Linux'
+
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.95.9 activity-statistics  51xianqu-hosts,'public' 'Template OS Linux'
+
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 121.43.115.169 delivery-daily-tomcat-121.43.115.169  51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10001 delivery 8081
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 121.43.233.138 delivery-gray-tomcat-121.43.233.138  51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10001 delivery 8081
+
+
+
+
+jdbc.username=sj
+jdbc.password=d23e16c3ba1cefa998763f153bac3c7c
+:q:
+
+ll | awk '{print "mysql -usj -pd23e16c3ba1cefa998763f153bac3c7c sanguo < /data/www/temp/db/"$NF}'   
+
+
+10.168.125.73
+10.168.138.68
+10.168.4.35
+
+
+
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.171.241.33 config-center-10.171.241.33 hosts_51xianqu,hosts_config-center 'Template OS Linux'
+
+
+
+
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.138.68 item-center-10.168.138.68 hosts_51xianqu,hosts_item-center 'Template OS Linux'
+/usr/local/prometheus/tools/zabbix_api.py --add-host 10.168.4.35 item-center-10.168.4.35 hosts_51xianqu,hosts_item-center 'Template OS Linux'
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.252.139.214 member-daily-tomcat 51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10000 member 8080
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.251.245.51 member-gray-tomcat 51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10000 member 8080
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.117.42.91 member-tomcat-10.117.42.91 51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10000 member 8080
+
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.252.144.3 delivery-tomcat-10.252.144.3 51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10001 delivery 8081
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.251.251.137 delivery-tomcat-10.251.251.137 51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10001 delivery 8081
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.117.38.231 delivery-daily-tomcat 51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10001 delivery 8081
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.175.205.86 market-tomcat-10.175.205.86 51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10000 market 8080
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.168.76.95 market-tomcat-10.168.76.95 51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10000 market 8080
+
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.51.2.235 tmq-tomcat-10.51.2.235 51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10000 tmq 8080
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.168.27.5 shop-gray-tomcat-10.168.27.5 51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10000 shop 8080
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.160.85.149 shop-tomcat-10.160.85.149 51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10000 shop 8080
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.160.23.167 searcher-tomcat-10.160.23.167 51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10000 searcher 8080
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.161.211.214 searcher-tomcat-10.161.211.214 51xianqu-tomcat 'Template JMX Tomcat 6','Template JMX Generic'  10000 searcher 8080
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.252.162.69 logistics-tomcat-10.252.162.69 tomcat_all,tomcat_logistics 'Template JMX Tomcat 6','Template JMX Generic' 10002 logistics 8082
+
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.168.125.73 itemcenter-tomcat-10.168.125.73 tomcat_all,tomcat_item-center 'Template JMX Tomcat 6','Template JMX Generic' 10006 itemcenter 8086
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.168.138.68 itemcenter-tomcat-10.168.138.68 tomcat_all,tomcat_item-center 'Template JMX Tomcat 6','Template JMX Generic' 10006 itemcenter 8086
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.168.4.35 itemcenter-tomcat-10.168.4.35 tomcat_all,tomcat_item-center 'Template JMX Tomcat 6','Template JMX Generic' 10006 itemcenter 8086
+
+10.168.125.73
+10.168.138.68
+10.168.4.35
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.117.49.195 analyzer-tomcat tomcat_analyzer 'Template JMX Tomcat 6','Template JMX Generic' 10000 analyzer 8080
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.252.147.80 analyzer-daily-tomcat tomcat_analyzer 'Template JMX Tomcat 6','Template JMX Generic' 10000 analyzer 8080
+
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.117.29.44 store-proxy-daily-tomcat-10.117.29.44 51xianqu-tomcat-daily 'Template JMX Tomcat 6','Template JMX Generic'  10002 store-proxy 8082
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.161.231.71 centralbank-daily-tomcat tomcat_centralbank 'Template JMX Tomcat 6','Template JMX Generic'  10000 centralbank 8080
+
+/usr/local/prometheus/tools/zabbix_api_tomcat.py --add-host 10.161.208.102 centralbank-gray-tomcat tomcat_centralbank 'Template JMX Tomcat 6','Template JMX Generic'  10000 centralbank 8080
+
+
+#!/bin/bash
+
+sudo bash
+
+echo 'ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA2NvE3sQuVVB6pgOUGs06+4/o489RG3Mk/EDA37qAiFkGNNGzH0lPvJyom1PQ/5xDggIyYpTGH/aFS/3Wdw7PKOCH1ZDSyZZcLva6D0iCOjpZfi5L8hre8sqbkZ//NhTWX9cn/7NnA8hfIxpVizYmrpW6Jru2OTfzvFaVV4F68RnClxv3cjiOo3ayuZSFT2k3hTnqPC/8UBLosdWoVBFwOh5zOeva6OSDAxqwMe7fayqqS2HQIUCbidMQnHt49TG+lBuMcMcdeKBLsmDflxyotxmZWMOTazmT5xB6wn1MVAP75EuHc6Qd+6VwSuHUhC7QKqPPaxD04VFMYf0et0W5yw== root@zabbix.51xianqu.net' >> /home/xqadmin/.ssh/authorized.keys
+
+mkdir -p /root/.ssh
+cat << EOF > /root/.ssh/id_rsa
+-----BEGIN RSA PRIVATE KEY-----
+MIIEoQIBAAKCAQEA2NvE3sQuVVB6pgOUGs06+4/o489RG3Mk/EDA37qAiFkGNNGz
+H0lPvJyom1PQ/5xDggIyYpTGH/aFS/3Wdw7PKOCH1ZDSyZZcLva6D0iCOjpZfi5L
+8hre8sqbkZ//NhTWX9cn/7NnA8hfIxpVizYmrpW6Jru2OTfzvFaVV4F68RnClxv3
+cjiOo3ayuZSFT2k3hTnqPC/8UBLosdWoVBFwOh5zOeva6OSDAxqwMe7fayqqS2HQ
+IUCbidMQnHt49TG+lBuMcMcdeKBLsmDflxyotxmZWMOTazmT5xB6wn1MVAP75EuH
+c6Qd+6VwSuHUhC7QKqPPaxD04VFMYf0et0W5ywIBIwKCAQAYyKjJAHpS5KBNfMB4
+F3R0hXmzoqovBdhXV9uHSIO3z6jwF/c2xozFGTfXPMdtq3Vt8Z9buTs22lhgdMgN
+m0rgGakfuMeiAo4xQMTOi/GgQS7Ml5Omo/w5ATZZySR7NZTXwNFfDTBYNCghRNaT
+kSj+Anusp70N2oJBaPsf8YpkskbEOm7edrr5az8vecWnvFYX6M08fuDobnkoQoFu
+cb8OYFq93iByw6Cg8xYYhIOFyfjIep8puj4Df9LsV6dIPRStyuYszDNPRyI7T/Sx
+k8umPU/5HRebucV/edyDwuUhsg0d4tkEaSSpynCzvQz0cafm0AOHIFrdYiBtSrXw
+zDUrAoGBAPGWp6++fsZEtmnZCdoDMuytrI2ONIfSm9LdyR4S//SbsJu9YIsdqEm6
+5+xnYs/ZmrksHB0QVc60onS4+JRJyov9h8G2abxFKt1IPHtVVMjM2qESfaThtNbg
+oJKl/0i/0SG4ElX25yoacP7NMQU69WaBrDzZfYZ8HHLqh32mthGFAoGBAOXLdP2Z
+KuRYVeABISnQhlmGWFjcpUSLsHGzxp26rjPgor1/M7PfDHvH48J0BJC+6LBFFMJj
+zS42kiZPg+zzUL2l5GyyYqA9xwLjKMcv+qn7pnyCh1/26zzrBZ6blK6tXOdmuEaW
+JPMTiRdY+p3uVuyFW3OzOFNUGj27J+kVlNcPAoGAWbudXoiVfNexd8Wkks38+NLL
+EAGee5decuSpyVeDo/9QOdigM6vuDMHD23bbjweuf0rl3ujPagiUHLm7akdLO0+K
+MgHswkWTlATjQ8Cb1Y3qzhzPlQNgbRGauiBmIlXf9pTTnEXDk0umUAMSNSSHCNEU
+Fpnsy40vI15s1uYmXkcCgYEA0hkagXYYlkIioOsXAai1WSpfZzAiEsjb1auuRxEU
+TLAfwzJ4afCAcSvI7EzQ+V4WkohNfoch/l3Hc3vmVPu3iNIv7lnzxbTTNdcAth08
+8y85IWFl1BT0VPQiZSCH8Cl5gxwWMehcS/SamQDlIq4GVJcvCrJ8o/UfTmH4mpdj
+gssCgYBsu/0Mu8E1dqEy4ETQyiOhocW9/nPb7/M9PIAVT37zuPEDqaYZzJlNoP1Q
+glYj2oFC/HISdCXhOKms5FgUc8gFO9jsbaFj7YnNQ+agNwBrqM3vzVdj3IuneX5z
+2+lykNJjItEmTwU6z/m/wWhURteq5ebuxIuTbDzodiAKhK5qTQ==
+-----END RSA PRIVATE KEY-----
+EOF
+
+chmod 400 /root/.ssh/id_rsa
+
+
+OprPSdslfHIOOOVLpwpgdaGOOMNdQSGsOwuMEgTeLjjdUhv
+mj2K3mcJvAnxObUbnnK9nvxV2L0C1YGxeReboKEke<CqyOT
+qMNsPqOpMqroRrqonwOrOOROonpRnrrvNrUUVutVqonUnqq
+ouuuumnqtoUnqqouuuumnqtoUrnufXknr
+
+
+
+AAABAg0ODAoPeNp1kEtPhEAQhO/zKybxDIFBNrskHFYgxoSHcdGTl4E0OHGZwR4Gl38vj000Rg996
+eqq+tI3JyPp0bTUYZS5gXcIvD2N4pIyx/VJDLpG0Q9CyfAelRonWnL9rmmjkN7xrlLqNaDJyM+GL
+0ckN10FWDTPGlCHlksihFWJ+QDhkmk5e8vxyLcnHNAAOYsapIaX2bbsGMm4kANILmtILr3A6UfCw
+XIYUdja+lM0g12tIHa7Atow27BHoWFLLrDlUuity3cvgssPQ05JHs5jpTvmMn93S9IN4O+uq1hOP
+eS8gzAqsix5ih6O6b8YvB7EeEV4NFi/cQ2/n/AFNFZ/BzAsAhQ/n2CTvesnQU0gNZRkC89OM24tZ
+AIUAV5LsWIxVKYm+G9sSmGjeQ6dMVU=X02d9
+
+
+
+2015-09-22 17:15:35,767 WARN [http-nio-8090-exec-10] [com.atlassian.gzipfilter.GzipResponseWrapper] finishResponse Was unable to create GzipResponseStream. Invalid gzip stream was sent in response body!
+org.apache.catalina.connector.ClientAbortException: java.io.IOException: Broken pipe
+        at org.apache.catalina.connector.OutputBuffer.realWriteBytes(OutputBuffer.java:393)
+        at org.apache.tomcat.util.buf.ByteChunk.flushBuffer(ByteChunk.java:426)
+        at org.apache.catalina.connector.OutputBuffer.doFlush(OutputBuffer.java:342)
+        at org.apache.catalina.connector.OutputBuffer.flush(OutputBuffer.java:317)
+
+
+
+mysql -usj -pd23e16c3ba1cefa998763f153bac3c7c sanguo < ./sanguo_activities.sql
+mysql -usj -pd23e16c3ba1cefa998763f153bac3c7c sanguo < ./sanguo_addBuffer.sql
+mysql -usj -pd23e16c3ba1cefa998763f153bac3c7c sanguo < ./sanguo_attackAction.sql
+mysql -usj -pd23e16c3ba1cefa998763f153bac3c7c sanguo < ./sanguo_awardPoolItem.sql
+mysql -usj -pd23e16c3ba1cefa998763f153bac3c7c sanguo < ./sanguo_awardPool.sql
+mysql -usj -pd23e16c3ba1cefa998763f153bac3c7c sanguo < ./sanguo_bangShop.sql
+mysql -usj -pd23e16c3ba1cefa998763f153bac3c7c sanguo < ./sanguo_cardEvolution.sql
+mysql -usj -pd23e16c3ba1cefa998763f153bac3c7c sanguo < ./sanguo_cardprototype.sql
+mysql -usj -pd23e16c3ba1cefa998763f153bac3c7c sanguo < ./sanguo_cardSoul.sql
+mysql -usj -pd23e16c3ba1cefa998763f153bac3c7c sanguo < ./sanguo_cardUpgrade.sql
+mysql -usj -pd23e16c3ba1cefa998763f153bac3c7c sanguo < ./sanguo_CityMapBlock.sql
+
+
+
+OmnqrDIEeSHnNNAVBnadkdJjDpQvxfikBLrAfRQoGODesON
+mj2L0E04LXuhMCq<hundnoE6y2K9C1o0fyUK>gvmn1YtI1j
+noNuRMPMRRPONNPprVnROnoRmrNRmrRvRotxsUuVnUTUqon
+UnqqrrunsrpmunUnqqrrunsrpmunUrnufXknrkkbq
+
+
+Description=Bamboo Enterprise\: Evaluation,
+NumberOfUsers=2000,
+CreationDate=2019-10-23,
+Evaluation=true,
+bamboo.active=true,
+MaintenanceExpiryDate=2019-11-22,
+bamboo.LicenseEdition=ENTERPRISE,
+Organisation=BIL4-6NRM-O69N-1K0X,
+ServerID=BV3N-MSGZ-SPTS-TVZW,
+SEN=SEN-L6675796,
+bamboo.LicenseTypeName=COMMERCIAL,
+LicenseID=LIDSEN-L6675796,
+LicenseExpiryDate=2019-11-22,
+PurchaseDate=2019-10-23

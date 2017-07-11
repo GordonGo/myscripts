@@ -1,0 +1,178 @@
+#!/bin/bash
+
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  iptables
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#   2016-6
+#===============================================================================
+
+function config(){
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi   
+
+  RES_SERVER="http://res.51xianqu.net"
+  RES_IPTABLES_HEAD=${RES_SERVER}"/iptables/iptables-public/iptables-head"
+  RES_IPTABLES_TAIL=${RES_SERVER}"/iptables/iptables-public/iptables-tail"
+  RES_IPTALBES_HOSTGROUP=${RES_SERVER}"/iptables/web-service/"`hostname_2_hostgroup`"/iptables"
+  RES_IPTALBES_ON=${RES_SERVER}"/iptables/web-service/"`hostname_2_hostgroup`"/"
+  # 参数
+  PARAM=
+  # 参数(调用精简显示)
+  PARAM_I="false"
+}
+
+
+function doParam(){
+  local param=
+  [ $# == 0 ] && return ;
+  for param in "$@" ; do
+      test ".${param}" = . && return ;
+      test "${param}" = "-i" && PARAM_I="true" && continue
+      param=`sed 's/^-//g' <<< ${param}`
+      RES_IPTALBES_HOSTGROUP=${RES_SERVER}"/iptables/${param}/"`hostname_2_hostgroup`"/iptables"
+      RES_IPTALBES_ON=${RES_SERVER}"/iptables/${param}/"`hostname_2_hostgroup`"/"
+      PARAM=${param}
+      break
+  done
+}
+
+function hostname_2_hostgroup(){
+  local hostname=`hostname`
+  hostname=`sed 's/-dev//g' <<< ${hostname}`
+  hostname=`sed 's/-daily//g' <<< ${hostname}`
+  hostname=`sed 's/-gray//g' <<< ${hostname}`
+  hostname=`sed 's/-production//g' <<< ${hostname}`
+  hostname=`sed 's/-prod//g' <<< ${hostname}`
+  # 后台类
+  hostname=`sed 's/-back$//g' <<< ${hostname}`
+  hostname=`sed 's/-back-dev//g' <<< ${hostname}`
+  hostname=`sed 's/-back-daily//g' <<< ${hostname}`
+  hostname=`sed 's/-back-gray//g' <<< ${hostname}`
+  hostname=`sed 's/-back-production//g' <<< ${hostname}`
+  hostname=`sed 's/-back-prod//g' <<< ${hostname}`
+  echo ${hostname}
+}
+
+function acq_env(){
+  local hostname=`hostname`
+  local find_env=`echo ${hostname} | grep -E '\-test|\-dev|\-daily|\-gray|\-prod|\-production'`
+  test ".${find_env}" = . &&  echo "prod" && return 
+  local env=`awk -F\- '{print $NF}' <<< ${hostname}`
+  test ".${env}" = ".production" &&  env="prod"
+  echo ${env}
+}
+
+
+function iptables_on(){
+  # 检查本机器组是否允许集中配置管理
+  test "${PARAM_I}" = "false" && echoPlus info "check iptables !"
+  curl -I ${RES_IPTALBES_ON} 2>/dev/null | grep 'HTTP/1.1 200 OK' >/dev/null 2>&1
+  if [ $? -ne 0 ] ; then
+     # 配置文件目录不存在，代表不允许集中配置管理
+     _return 1 "Centralized configuration is not allowed" ;
+  fi
+}
+
+function download_res(){
+  test -d "/data/www/temp/iptables/" && rm -rf /data/www/temp/iptables
+  execWget ${RES_IPTABLES_HEAD} /data/www/temp/iptables/   >/dev/null 2>&1
+  execWget ${RES_IPTABLES_TAIL} /data/www/temp/iptables/   >/dev/null 2>&1
+  download_res_ ;
+}
+
+function download_res_(){
+  local env=`acq_env`
+  if [ ".${env}" != "." ] ; then
+     RES_IPTALBES_HOSTGROUP_ENV=${RES_SERVER}"/iptables/${PARAM}/"`hostname_2_hostgroup`"/${env}/iptables"    
+     curl -I ${RES_IPTALBES_HOSTGROUP_ENV} 2>/dev/null | grep 'HTTP/1.1 200 OK' >/dev/null 2>&1
+     if [ $? -eq 0 ] ; then
+        # 配置文件存在
+        execWget ${RES_IPTALBES_HOSTGROUP_ENV} /data/www/temp/iptables/ >/dev/null 2>&1
+        return ;
+     fi
+  fi
+  curl -I ${RES_IPTALBES_HOSTGROUP} 2>/dev/null | grep 'HTTP/1.1 200 OK' >/dev/null 2>&1
+  if [ $? -ne 0 ] ; then
+     # 配置文件不存在，生成空文件
+     echo "# policy is not present !" > /data/www/temp/iptables/iptables
+  else
+     # 配置文件存在
+     execWget ${RES_IPTALBES_HOSTGROUP} /data/www/temp/iptables/ >/dev/null 2>&1
+  fi
+}
+
+function backup_iptables(){
+  execMkdir /data/www/backups/iptables
+  test -f "/etc/sysconfig/iptables" && execCp /etc/sysconfig/iptables /data/www/backups/iptables/iptables
+}
+
+function check_res_iptables(){
+  if [ ! -s /data/www/temp/iptables/iptables-head ]; then #如果文件存在且为空
+    _return 1 "iptables-head is empty." ;
+  fi
+  if [ ! -s /data/www/temp/iptables/iptables-tail ]; then #如果文件存在且为空
+    _return 1 "iptables-tail is empty." ;
+  fi
+  test "${PARAM_I}" = "false" && echoPlus info "iptables check ok !"
+}
+
+function invoke_iptables(){
+  test "${PARAM_I}" = "false" && echoPlus info "invoke iptables"
+  echo "" > /etc/sysconfig/iptables
+  cat /data/www/temp/iptables/iptables-head >> /etc/sysconfig/iptables
+  cat /data/www/temp/iptables/iptables >> /etc/sysconfig/iptables
+  cat /data/www/temp/iptables/iptables-tail >> /etc/sysconfig/iptables
+  service iptables stop >/dev/null 2>&1
+  service iptables start >/dev/null 2>&1
+  if [ $? -ne 0 ] ; then
+     # 服务启动失败，回滚配置
+     rollback_iptables ;
+  fi
+  _return 0
+}
+
+function rollback_iptables(){
+  test "${PARAM_I}" = "false" && echoPlus info "Rollback iptables"
+  cat /data/www/backups/iptables/iptables > /etc/sysconfig/iptables
+  service iptables start >/dev/null 2>&1
+  _return 1 "Rollback iptables" ;
+}
+
+function _return(){
+  # return_type 1=error   0=success
+  local return_type=$1
+  local msg=$2
+  local return_msg=`hostname`" update iptables success !"
+  if [[ "${return_type}" == "1" ]] ; then
+      return_msg=`hostname`" ${msg} update iptables fail !"
+      echoPlus error ${return_msg} ;
+      exit 1
+  else
+      return_msg=`hostname`" update iptables success !"
+      echoPlus info ${return_msg} ;
+      exit 0
+  fi
+}
+
+
+config ;
+doParam $@ ;
+# 检查本机器组是否允许集中配置管理
+iptables_on ;
+# iptalbes 资源文件下载
+download_res ;
+# iptables 原文件备份
+backup_iptables ;
+# iptables 启用配置
+check_res_iptables ;
+invoke_iptables ;

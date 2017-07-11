@@ -1,0 +1,65 @@
+#!/bin/bash
+
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  build_update_conf
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+
+
+function config(){
+  #-------配置项--------------------------
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi      
+
+  loadConf prometheus_update.conf ;
+
+  # 资源服务器配置
+  PROMETHEUS_DOWNLOAD_URL='http://res.51xianqu.net/software/PROMETHEUS'
+
+  # 配置文件 保留
+  PROMETHEUS_CONF_OPT=()
+
+  RES_PATH=/data/www/ROOT/static/software/PROMETHEUS
+}
+
+
+function step_version(){
+  test ".${PROMETHEUS_VERSION}" = . && echo "1.0.0" && return
+  local head_version=`awk -F'.' '{print $1"."$2}' <<< ${PROMETHEUS_VERSION}`
+  local tail_version=`awk -F'.' '{print $NF}' <<< ${PROMETHEUS_VERSION}`
+  tail_version=$(( ${tail_version} + 1 ))
+  echo "${head_version}.${tail_version}"
+}
+
+
+function build(){
+  echo "PROMETHEUS_VERSION="`step_version` > ${RES_PATH}/etc/prometheus_update.conf
+  echo " " >> ${RES_PATH}/etc/prometheus_update.conf
+
+  echo "PROMETHEUS_DOWNLOAD_URL="${PROMETHEUS_DOWNLOAD_URL} >> ${RES_PATH}/etc/prometheus_update.conf
+  echo " " >> ${RES_PATH}/etc/prometheus_update.conf
+
+  echo 'PROMETHEUS_RES_OPT=(' >> ${RES_PATH}/etc/prometheus_update.conf
+  cd ${RES_PATH} && find . -type f -exec md5sum {} \; |grep -v '.conf'|grep -v '.sh' | awk -F'[ |.]' '{print $NF" "$1}' >> ${RES_PATH}/etc/prometheus_update.conf
+  echo ')' >> ${RES_PATH}/etc/prometheus_update.conf
+  echo " " >> ${RES_PATH}/etc/prometheus_update.conf
+
+  echo 'PROMETHEUS_CONF_OPT=(' >> ${RES_PATH}/etc/prometheus_update.conf
+  cd ${RES_PATH} && find . -type f -exec md5sum {} \; |grep "\.conf" |awk -F'  .' '{print $NF}' >> ${RES_PATH}/etc/prometheus_update.conf
+
+  echo ')' >> ${RES_PATH}/etc/prometheus_update.conf
+  echo " " >> ${RES_PATH}/etc/prometheus_update.conf
+
+}
+
+config ;
+build ;

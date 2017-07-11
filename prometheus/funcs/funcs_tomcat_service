@@ -1,0 +1,380 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  Prometheus funcs_tomcat_service
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+
+function tomcatVersion(){
+  local tomcatAppName=$1
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  local tomcatName=`acqTomcatName ${tomcatAppName}`
+  #echo "${TOMCAT_INSTALL_PATH}/${tomcatName}-${tomcatHttpPort}-${tomcatAppName}/bin/daemon.sh version"
+  local tomcatDaemonFile=${TOMCAT_INSTALL_PATH}/${tomcatName}-${tomcatHttpPort}-${tomcatAppName}/bin/daemon.sh
+  if [ -x ${tomcatDaemonFile} ] ; then    
+     eval "${TOMCAT_INSTALL_PATH}/${tomcatName}-${tomcatHttpPort}-${tomcatAppName}/bin/daemon.sh version"
+  else
+     echoPlus error unknow!
+  fi  
+}
+
+
+function tomcat_jvm(){
+  for tomcatAppName in ${TOMCAT_APP_NAME_OPT[*]} ; do
+      echo "TOMCAT NAME : ${tomcatAppName}"
+      tomcat_jvm_ ${tomcatAppName}
+  done
+}
+
+function tomcat_jvm_(){
+  local tomcatAppName=$1
+  local tomcatPid=`acqTomcatPid ${tomcatAppName}`
+  local tomcat_jvm_run=`ps -f -p ${tomcatPid} | tail -n1`
+  local step param is_param tomcat_param
+  for param in ${tomcat_jvm_run} ; do
+      step=$(( step + 1 ))
+      case "${step}" in 
+           1) tomcat_uid=${param} 
+              continue;;
+           2) tomcat_pid=${param} 
+              continue;;
+           3) tomcat_ppid=${param} 
+              continue;;
+           4) tomcat_c=${param} 
+              continue;;
+           5) tomcat_stime=${param} 
+              continue;;
+           6) tomcat_tty=${param} 
+              continue;;
+           7) tomcat_time=${param} 
+              continue;;
+           8) tomcat_cmd=${param}
+              printf "%-15s %-15s %-15s %-15s \n%-15s %-15s %-15s %-15s\n" UID PID TIME CMD ${tomcat_uid} ${tomcat_pid} ${tomcat_time} ${tomcat_cmd}
+              continue;;
+      esac
+      is_param=`echo ${param} |grep "^-"`
+      if [ ".${is_param}" != "." ] ; then
+         test ".${tomcat_param}" != "." && echo "${tomcat_param}"
+         tomcat_param="${param}"
+      else
+         tomcat_param="${tomcat_param} ${param}"
+      fi
+  done
+  echo ${param}
+}
+
+
+function tomcatJvmInfo_(){
+  local tomcatAppName=$1
+  if [ $# == 0 ] ; then 
+     #printf "\e[32m%-20s %-15s %-10s %-10s %-10s %-10s %-10s %-10s\e[0m \n" Port/ServiceName RMI_SERVER Xms Xmx Xmn Xss XXPermSize XXMaxPermSize
+     printf "%-20s %-15s %-10s %-10s %-10s %-10s %-10s %-10s \n" Port/ServiceName RMI_SERVER Xms Xmx Xmn Xss XXPermSize XXMaxPermSize
+  else
+     local rmi_server=${RMI_SERVER_NAME}
+     local jvm_xms=${SET_JVM_Xms} ;
+     local jvm_xmx=${SET_JVM_Xmx} ;
+     local jvm_xmn=${SET_JVM_Xmn} ;
+     local jvm_xss=${SET_JVM_Xss} ;
+     local jvm_xxPermSize=${SET_JVM_XXPermSize} ;
+     local jvm_xxMaxPermSize=${SET_JVM_XXMaxPermSize} ;
+     #local tomcatVersion=`acqTomcatVersion ${tomcatHttpPort} ${tomcatAppName}`
+     #printf "\e[35m%-20s %-15s %-10s %-10s %-10s %-10s %-10s %-10s\e[0m \n" ${tomcatHttpPort}/${tomcatAppName} ${rmi_server} ${jvm_xms} ${jvm_xmx} ${jvm_xmn} ${jvm_xss} ${jvm_xxPermSize} ${jvm_xxMaxPermSize}
+     printf "%-20s %-15s %-10s %-10s %-10s %-10s %-10s %-10s \n" ${tomcatHttpPort}/${tomcatAppName} ${rmi_server} ${jvm_xms} ${jvm_xmx} ${jvm_xmn} ${jvm_xss} ${jvm_xxPermSize} ${jvm_xxMaxPermSize}
+  fi
+}
+
+function acqVmSize(){
+   local pid=$1
+   local value=`grep "VmSize" /proc/${pid}/status | awk '{print $2}'`
+   if [ ".${value}" != "." ] ; then
+      echo $(( ${value} / 1024 ))
+   else 
+      echo -   
+   fi
+}
+
+function acqVmRSS(){
+   local pid=$1
+   local value=`grep "VmRSS" /proc/${pid}/status | awk '{print $2}'`
+   if [ ".${value}" != "." ] ; then
+      echo $(( ${value} / 1024 ))
+   else 
+      echo -   
+   fi
+}
+
+function acqProcess(){
+   local pid=$1
+   local value=`pstree -p ${pid} | wc -l`
+   if [ ".${value}" != "." ] ; then
+      echo ${value}
+   else 
+      echo -   
+   fi
+}
+
+function acqTomcatAppNameExclusiveDisable(){
+   local tomcatAppName=$1
+   tomcatAppName=`sed "s/(disable)//g" <<< ${tomcatAppName}`
+   echo ${tomcatAppName}
+}
+
+function tomcatServiceControlOne(){
+  # 单个服务控制
+  # @param appName|httpPort
+  # @param {start|stop|restart}  
+  local tomcatAppNameOrHttpPort=$1
+  local action=$2
+  for((i=0;i<=`acqTomcatCnt`;i++)) ; do
+     local tomcatAppName=${TOMCAT_APP_NAME_OPT[$i]}
+     local tomcatHttpPort=${TOMCAT_HTTP_PORT_OPT[$i]}
+     if [ ".${tomcatAppNameOrHttpPort}" == ".${tomcatAppName}" ] || [ ".${tomcatAppNameOrHttpPort}" == ".${tomcatHttpPort}" ] ; then
+        local isDisable=`grep -c "(disable)" <<< ${tomcatAppName}`
+        if [ ".${isDisable}" = ".0" ] ; then
+           case "${action}" in
+                start) tomcatServiceStart ${tomcatAppName} ;;
+                stop) tomcatServiceStop ${tomcatAppName} ;;
+                kill) tomcatServiceKill ${tomcatAppName} ;;
+                restart) tomcatServiceRestart ${tomcatAppName} ;;
+                linklogs|ll) tomcat_link_logs ${tomcatAppName} ;;
+                clearlogs|cl) clearFile_logs ${tomcatAppName} ;;
+                dump) tomcat_dump ${tomcatAppName} ;;
+                reloadable=true|reloadable:true) set_tomcat_reloadable ${tomcatAppName} true ;;
+                reloadable=false|reloadable:false) set_tomcat_reloadable ${tomcatAppName} false ;;
+                v|ver|version) tomcatVersion ${tomcatAppName} 
+                               exit 0 ;;
+           esac    
+        else
+           tomcatAppName=`acqTomcatAppNameExclusiveDisable ${tomcatAppName}`
+           printTomcatServerX ${tomcatAppName} disable ;
+        fi
+     fi   
+  done
+}
+
+function tomcatServiceControlAll(){
+  # 多服务控制
+  # @param action {start|stop|restart}  
+  local action=$1
+  local tomcatAppName
+  for tomcatAppName in ${TOMCAT_APP_NAME_OPT[*]} ; do
+     local isDisable=`grep -c "(disable)" <<< ${tomcatAppName}`
+     if [ ".${isDisable}" = ".0" ]; then
+        case "${action}" in
+             start) tomcatServiceStart ${tomcatAppName} ;;
+             stop) tomcatServiceStop ${tomcatAppName} ;;
+             kill) tomcatServiceKill ${tomcatAppName} ;;
+             killall) tomcatServiceKillall ;;
+             restart) tomcatServiceRestart ${tomcatAppName} ;;
+             linklogs|ll) tomcat_link_logs ${tomcatAppName} ;;
+             clearlogs|cl) clearFile_logs ${tomcatAppName} ;;
+             #自动加载
+             reloadable=true|reloadable:true) set_tomcat_reloadable ${tomcatAppName} true ;;
+             reloadable=false|reloadable:false) set_tomcat_reloadable ${tomcatAppName} false ;;
+             v|version)  acqVersion_tomcat 
+                         exit 0 ;;
+        esac  
+     else
+        tomcatAppName=`acqTomcatAppNameExclusiveDisable ${tomcatAppName}`
+        printTomcatServerX ${tomcatAppName} disable ;
+     fi
+  done
+}
+
+function tomcat_link_logs(){
+  # @param appName
+  local tomcatAppName=$1
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  local tomcatAppLogsPath=/data/www/logs/apps/${tomcatHttpPort}-${tomcatAppName}
+  local appMonitorPath=/data/www/logs/apps/monitor
+  [ -d ${tomcatAppLogsPath} ] || exit 0 ;
+  local users_home=( '/root' '/home/xqadmin' '/home/manage' )
+  for user_home in ${users_home[*]} ; do
+      [ -d ${user_home} ] || continue ;
+      cd ${user_home}
+      execLn ${tomcatAppLogsPath} ${user_home} ;
+      execLn ${appMonitorPath} ${user_home};
+  done
+}
+
+function set_tomcat_reloadable(){
+  # 设置启用和关闭热部署热加载
+  # @param appName
+  # @param value {false|true}   
+  local tomcatAppName=$1
+  local value=$2
+  # 非root用户则退出
+  checkRoot ;
+  local tomcatConfPath=`acqTomcatHome ${tomcatAppName}`"/conf"
+  local tomcat_server_xml=${tomcatConfPath}/server.xml
+  case "${value}" in
+       false) 
+         chg_file ${tomcat_server_xml} 'reloadable="true"' 'reloadable="false"' ;
+         chg_file ${tomcat_server_xml}  'autoDeploy="true"' 'autoDeploy="false"' ;;
+       true)
+         chg_file ${tomcat_server_xml} 'reloadable="false"' 'reloadable="true"' ;
+         chg_file ${tomcat_server_xml}  'autoDeploy="false"' 'autoDeploy="true"' ;;
+  esac
+  echoPlus info "reloadable & autoDeploy configure :"
+  grep -En --color=auto '(reloadable|autoDeploy)' ${tomcat_server_xml} ;
+}
+
+function acqTomcatDaemonPid(){
+  # @param appName
+  local tomcatAppName=$1
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  local tDaemon=`ps -ef|grep jsvc|grep "${tomcatAppName}"|grep "${tomcatHttpPort}" |awk '{print $1"\t"$2}' |grep "root"|awk '{print $2}'`
+  echo ${tDaemon}
+}
+
+function acqTomcatPid(){
+  # @param appName
+  local tomcatAppName=$1
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  local tPid=`ps -ef|grep jsvc|grep "${tomcatAppName}"|grep "${tomcatHttpPort}" |awk '{print $1"\t"$2}' |grep "tomcat"|awk '{print $2}'` 
+  echo ${tPid}
+}
+
+function tomcat_dump(){
+  # @param appName
+  local tomcatAppName=$1
+  local tomcatPid=`acqTomcatPid ${tomcatAppName}`
+  local heapFile="${tomcatAppName}_heapdump.hprof"
+  local stackFile="${tomcatAppName}_stackdump.tdump"
+  test ".${JAVA_HOME}" = . && JAVA_HOME=/usr/java/jdk
+  execMkdir /data/www/temp
+  [ -f /data/www/temp/${heapFile} ] && rm -f /data/www/temp/${heapFile}
+  sudo -u tomcat ${JAVA_HOME}/bin/jmap -dump:live,file=/data/www/temp/${heapFile} ${tomcatPid}
+  [ -f /data/www/temp/${stackFile} ] && rm -f /data/www/temp/${stackFile}
+  sudo -u tomcat ${JAVA_HOME}/bin/jstack ${tomcatPid} > /data/www/temp/${stackFile}
+  echoPlus info "tomcat ${tomcatAppName} heapdump file : /data/www/temp/${heapFile}"
+  echoPlus info "tomcat ${tomcatAppName} stackdump file : /data/www/temp/${stackFile}"
+}
+
+function tomcatServiceKill(){
+  # 杀死进程
+  # @param appName
+  local tomcatAppName=$1
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  local tDaemon=`acqTomcatDaemonPid ${tomcatAppName} ${tomcatHttpPort}` 
+  local tPid=`acqTomcatPid ${tomcatAppName} ${tomcatHttpPort}`
+  #echoPlus 31 "Tomcat Daemon Pid : ${tDaemon}"
+  #echoPlus 31 "Tomcat Jsvc Pid : ${tPid}"
+  [ ".${tDaemon}" != "." ] && kill -9 ${tDaemon}
+  [ ".${tPid}" != "." ] && kill -9 ${tPid}
+}
+
+function tomcatServiceKillall(){
+  killall jsvc ;
+}
+
+function tomcatServiceRestart(){
+  # 重启服务
+  # @param appName
+  local tomcatAppName=$1
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  tomcatServiceStop ${tomcatAppName}
+  tomcatServiceStart ${tomcatAppName}
+}
+
+function tomcatServiceStop(){
+  # 停止服务
+  # @param appName
+  # @param httpPort
+  local tomcatAppName=$1
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  local tomcatName=`acqTomcatName ${tomcatAppName}`
+  ${TOMCAT_INSTALL_PATH}/${tomcatName}-${tomcatHttpPort}-${tomcatAppName}/bin/daemon.sh stop >/dev/null 2>&1
+  printTomcatServerX ${tomcatAppName} stop
+}
+
+
+
+function tomcatServiceStart(){
+  # 启动服务
+  # @param appName
+  # @param httpPort
+  local tomcatAppName=$1
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  local tomcatName=`acqTomcatName ${tomcatAppName}`
+  local tDaemon=`acqTomcatDaemonPid ${tomcatAppName}` 
+  local tPid=`acqTomcatPid ${tomcatAppName}`
+  [ ".${tDaemon}" != "." ] && return 1 ;
+  [ ".${tPid}" != "." ] && return 1 ;
+  delTomcatLogs ${tomcatAppName} ;
+  ${TOMCAT_INSTALL_PATH}/${tomcatName}-${tomcatHttpPort}-${tomcatAppName}/bin/daemon.sh start >/dev/null 2>&1
+  printTomcatServerX ${tomcatAppName} start
+}
+
+function delTomcatLogs(){
+  local tomcatAppName=$1
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  local tomcatName=`acqTomcatName ${tomcatAppName}`
+  if [ ".${DEL_LOGS}" == ".true" ]; then
+     echo "Del tomcat logs ..."
+     rm -rf /data/www/logs/apps/${tomcatHttpPort}-${tomcatAppName}/app/* >/dev/null 2>&1
+     rm -rf /data/www/logs/apps/${tomcatHttpPort}-${tomcatAppName}/tomcat/* >/dev/null 2>&1
+  fi
+}
+
+function printTomcatServerX(){
+  # 显示服务状态
+  # @param appName
+  # @param {start|stop|restart|disabe}
+  local tomcatAppName=$1
+  local action=$2
+  case "${action}" in
+       start) echo -e "\e[32m${1}\e[0m service start [ \e[32mOK\e[0m ]" ;;
+       stop) echo -e "\e[32m${1}\e[0m service stop [ \e[31mOK\e[0m ]" ;;
+       disabe) echo -e "\e[32m${1}\e[0m service is [ \e[31mDISABLE\e[0m ]" ;;
+       restart) ;;
+  esac
+}
+
+function tomcatServiceStatus(){
+  # 监控服务
+  # @param appName
+  # @param http status
+  # return 0 | 1
+  local tomcatAppName=$1
+  local httpStatus=`acqHttpStatus ${tomcatAppName}`
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  local appWebappsPath=`acqAppWebappsPath ${tomcatAppName}`
+  local httpStatusUrl
+  if [ `grep -c "http://" <<< ${httpStatus}` == "0" ] ; then
+     test ".${appWebappsPath}" = .ROOT && appWebappsPath=
+     httpStatusUrl="http://127.0.0.1:${tomcatHttpPort}/${appWebappsPath}/${httpStatus}"
+  else
+     httpStatusUrl=${httpStatus}
+  fi
+  # 老版
+  #local value=`curl -s -I -m 5 ${httpStatusUrl} | grep -c "HTTP/1.1 200 OK"`
+  test ".${HTTP_STATUS_TIME}" = .  && HTTP_STATUS_TIME=5
+  # local value=`curl -i -m 5 ${httpStatusUrl} 2>/dev/null | grep -c "HTTP/1.1 200 OK"`
+  local value=`curl -i -m ${HTTP_STATUS_TIME} ${httpStatusUrl} 2>/dev/null | grep -c "HTTP/1.1 200 OK"`
+  if [ ${value} -eq 0 ] ; then
+     echo 0 
+  else 
+     echo 1
+  fi
+}
+
+function tomcatInfo(){
+  # 输出Jvm相关配置信
+  echo $DIVIDING_LINE
+  tomcatJvmInfo_ ;
+  echo $DIVIDING_LINE
+  local tomcatAppName
+  for tomcatAppName in ${TOMCAT_APP_NAME_OPT[*]} ; do
+     local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+     local tomcatName=`acqTomcatName ${tomcatAppName}`
+     local buildSetenvPath="${TOMCAT_INSTALL_PATH}/${tomcatName}-${tomcatHttpPort}-${tomcatAppName}/bin/setenv.sh"
+     if [ -f "${buildSetenvPath}" ] ; then
+        . ${buildSetenvPath} ;
+        tomcatJvmInfo_ ${tomcatAppName} ;
+     fi
+  done
+  echo $DIVIDING_LINE
+  # tomcatServiceInfo ；
+}

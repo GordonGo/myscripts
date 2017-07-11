@@ -1,0 +1,355 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  Prometheus funcs_tomcat
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+function loadTomcatRes(){
+  # 下载并加载 tomcat_res.conf 资源包配置文件
+  local file=`basename ${TOMCAT_RES_DOWNLOAD_URL}`
+  execWget ${TOMCAT_RES_DOWNLOAD_URL} ${PROMETHEUS_HOME}/etc/
+  . ${PROMETHEUS_HOME}/etc/${file}
+}
+
+function acqValueByEnvname(){
+  # 按全局变量名取值 
+  # @Param app name
+  # @Param envname
+  # return value (default)  
+  local appName=$1
+  local envname=$2
+  local i
+  local tomcatMaxCnt=$(( ${#TOMCAT_APP_NAME_OPT[@]} - 1 ))
+  for((i=0;i<=${tomcatMaxCnt};i++));do
+     if [ "${TOMCAT_APP_NAME_OPT[$i]}" == "${appName}" ] ; then
+        eval eval echo "$\{${envname}[$i]\}" 
+        return 0 ;
+     fi
+  done
+  exit 1 ;
+}
+
+function acqTomcatJavaOpts(){
+  # 取webapps路径
+  # @Param app name
+  # return webapps path (default)
+  local appName=$1
+  [ ".${OPEN_TOMCAT_JAVA_OPTS}" != ".true" ] && return ;
+  local value=`acqValueByEnvname ${appName} "TOMCAT_JAVA_OPTS"` ;
+  [ ".${value}" == ".-" ] && return ;
+  echo "JAVA_OPTS=\"\$JAVA_OPTS ${value}"\"
+}
+
+function acqTomcatHome(){
+  # 取tomcat conf路径
+  # @Param app name
+  # return tomcat/conf path (default)
+  local tomcatAppName=$1
+  local tomcatName=`acqTomcatName ${tomcatAppName}`
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  test ".${TOMCAT_INSTALL_PATH}" = . && TOMCAT_INSTALL_PATH='/usr/local'
+  echo ${TOMCAT_INSTALL_PATH}/${tomcatName}-${tomcatHttpPort}-${tomcatAppName}
+}
+
+function acqAppWebappsPath(){
+  # 取webapps路径
+  # @Param app name
+  # return webapps path (default)
+  local appName=$1
+  acqValueByEnvname ${appName} "TOMCAT_SERVERXML_WEBAPPSPATH_OPT" ;
+}
+
+function acqAppWebappsFullPath(){
+  # 取webapps完整路径
+  # @Param app name
+  # return webapps path (/data/www/ROOT/${appName}/${webappsPath})
+  local appName=$1
+  #local webappsPath=`acqAppWebappsPath ${appName}`
+  echo "/data/www/ROOT/${appName}/`acqAppWebappsPath ${appName}`"
+}
+
+function acqTomcatHttpPort(){
+  # 取tomcat http port
+  # @Param app name
+  # return http port (8080) 
+  local appName=$1
+  acqValueByEnvname ${appName} "TOMCAT_HTTP_PORT_OPT" ;
+}
+
+function acqHttpStatus(){
+  # 取tomcat http status
+  # @Param app name
+  # return -
+  local appName=$1
+  acqValueByEnvname ${appName} "HTTP_STATUS_OPT" ;
+}
+
+function acqTomcatShutdownPort(){
+  # 取tomcat shutdown port
+  # @Param app name
+  # return shutdown port (8080) 
+  local appName=$1
+  acqValueByEnvname ${appName} "TOMCAT_SHUTDOWN_PORT_OPT" ;
+}
+
+function acqTomcatJmxRegistryPortPlatform(){
+  local appName=$1
+  acqValueByEnvname ${appName} "TOMCAT_JMX_rmiRegistryPortPlatform_OPT" ;
+}
+
+function acqTomcatJmxServerPortPlatform(){
+  local appName=$1
+  acqValueByEnvname ${appName} "TOMCAT_JMX_rmiServerPortPlatform_OPT" ;
+}
+
+function unlinkAppConf(){
+  # 清理app配置文件
+  # @param app name     (default)
+  local appName=$1
+  local fileName
+  local appWebappsPath=`acqAppWebappsPath ${appName}`
+  #local appClassesPath="/data/www/ROOT/${appName}/${appWebappsPath}/WEB-INF/classes"
+  echoPlus 32 "unlink app conf(properties) ..." ;
+  for fileName in ${APP_CONF_NAME_OPT[*]} ; do
+      local appConfFile="/data/www/ROOT/${appName}/${appWebappsPath}/WEB-INF/classes/${fileName}"
+      if [ -e "${appConfFile}" ] ; then
+         unlink ${appConfFile}
+         echoPlus 32 "unlink ${appConfFile}" ;
+      fi
+  done
+  echo "unlink config.conf ..."
+  local appConfPath="/data/www/conf/apps/${appName}"
+  if [ -f "${appConfPath}/config.conf" ]; then
+     for configFileName in `cat ${appConfPath}/config.conf` ; do 
+         if [ -f "${configFileName}" ] ; then
+            unlink ${configFileName}
+            echoPlus 32 "unlink ${configFileName}" ;
+         fi
+     done
+  fi
+}
+
+function linkAppConf(){
+  # 创建app配置文件连接
+  # @param app name     (default)
+  local appName=$1
+  local propertiesFile propertiesFiles
+  local appConfPath="/data/www/conf/apps/${appName}"
+  local appWebappsPath=`acqAppWebappsPath ${appName}`
+  local appWebappsPathFull="/data/www/ROOT/${appName}/${appWebappsPath}/WEB-INF/classes"
+  execMkdir ${appConfPath} ;
+  echo "Being configured ... "
+  echo $DIVIDING_LINE
+  printf "%-30s %-25s %-25s %-10s\n" PropertiesFileName ExternalFileInode InternalFileInode Check
+  for propertiesFiles in ${APP_CONF_NAME_OPT[*]} ; do
+      propertiesFiles=`ls ${appWebappsPathFull}/${propertiesFiles} 2>/dev/null`
+      [ $? -ne 0 ] && continue ;
+      for propertiesFile in ${propertiesFiles} ; do
+          linkAppConf_ ${appName} ${propertiesFile} ;
+      done
+  done
+  echo $DIVIDING_LINE
+}
+
+function linkAppConf_(){
+  # 创建app配置文件连接
+  # @param app name
+  # @Param properties file (/data/www/ROOT/sanguo/sanguo/WEB-INF/classes/server.properties)
+  local appName=$1
+  local propertiesFile=$2
+  local propertiesName=`basename ${propertiesFile}`
+  local appConfFile="/data/www/conf/apps/${appName}/${propertiesName}"
+  if [ ! -e "${appConfFile}" ] ; then
+     cp ${propertiesFile} ${appConfFile} >/dev/null 2>&1
+  fi   
+  ln -f ${appConfFile} ${propertiesFile} >/dev/null 2>&1
+  if [ -f "${appConfFile}" ] ; then
+     local efi=`ls -i ${appConfFile} | awk '{print $1}'`
+     local ifi=`ls -i ${propertiesFile} | awk '{print $1}'`
+     if [ "${efi}" = "${ifi}" ]; then
+        printf "\e[34m%-30s\e[0m %-25s %-25s \e[32m%-10s\e[0m\n" ${propertiesName} ${efi} ${ifi} OK
+     else
+        printf "\e[34m%-30s\e[0m %-25s %-25s \e[31m%-10s\e[0m\n" ${propertiesName} ${efi} ${ifi} Failure  
+     fi
+  fi
+}
+
+function linkAppConfigConf(){
+  # 创建app自定义配置文件连接
+  # @param app name     (default)
+  local appName=$1
+  local fileName
+  local appConfPath="/data/www/conf/apps/${appName}"
+  local appWebappsPath=`acqAppWebappsPath ${appName}`
+  local configFileName
+  local efi='-'
+  local ifi='-'
+  echoPlus 32 "The individualization configing(config.conf)...."
+  echo $DIVIDING_LINE
+  if [ ! -f "${appConfPath}/config.conf" ]; then
+     touch "${appConfPath}/config.conf"
+  else
+     for configFilePath in $(cat ${appConfPath}/config.conf) ; do
+         local individualizationConfFile=`basename ${configFilePath}` 
+         if [ -f "${appConfPath}/${individualizationConfFile}" ] ; then
+            ln -f ${appConfPath}/${individualizationConfFile} ${configFilePath}
+            efi=`ls -i ${appConfPath}/${individualizationConfFile} | awk '{print $1}'`
+         else
+            [ -f "${configFilePath}" ] && ln -f ${configFilePath} ${appConfPath}/${individualizationConfFile} 
+         fi
+         [ -f "${configFilePath}" ] && ifi=`ls -i ${configFilePath} | awk '{print $1}'`
+         if [ "${efi}" = "${ifi}" ] && [ "${efi}" != "-" ]; then
+            printf "\e[34m%-30s\e[0m %-25s %-25s \e[32m%-10s\e[0m\n" ${individualizationConfFile} ${efi} ${ifi} OK
+         else
+            printf "\e[34m%-30s\e[0m %-25s %-25s \e[31m%-10s\e[0m\n" ${individualizationConfFile} ${efi} ${ifi} Failure   
+         fi
+     done
+  fi
+  echo $DIVIDING_LINE
+}
+
+function appPermissionsConfiguration(){
+  # 修改app相关目录和文件权限
+  # @param app name     (default)
+  local appName=$1
+  local tomcatHttpPort=`acqTomcatHttpPort ${appName}`
+  local appWebappsPath=`acqAppWebappsPath ${appName}`
+  local appWebPath="/data/www/ROOT/${appName}/${appWebappsPath}"
+  local appLogsPath="/data/www/logs/apps/${tomcatHttpPort}-${appName}/app"
+  local dir_mod='755'
+  # 文件权限为400
+  local file_mod='664'
+  # 日志文件权限  
+  local log_dir_mod='755'
+  local log_file_mod='664' 
+  execMkdir "${appLogsPath}"
+  chown root:root -R /data/www/ROOT/${appName}
+  chmod ${dir_mod} -R "${appWebPath}"
+  find "${appWebPath}/" -type f | xargs chmod ${file_mod} >/dev/null 2>&1
+  chown tomcat:tomcat -R "${appLogsPath}"
+  chmod ${log_dir_mod} -R "${appLogsPath}"
+  find "${appLogsPath}" -type f | xargs chmod ${log_file_mod} >/dev/null 2>&1
+}
+
+function clearFile(){
+  # 清理app相关临时文件和日志
+  # @param app name
+  local appName=$1
+  local tomcatHttpPort=`acqTomcatHttpPort ${appName}`
+  echoPlus 32 "deleting....update temp file" ;
+  execRmDir /data/www/update/update-tmp/* ;
+  echoPlus 32 "deleting....tomcat work file" ;
+  execRmDir ${TOMCAT_INSTALL_PATH}/`acqTomcatName ${appName}`-${tomcatHttpPort}-${appName}/work/* ;
+  if [ ".${DEL_LOGS}" == ".true" ] ; then
+     clearFile_logs ${appName} ;
+     #local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+     #local tomcatLogsPath=/data/www/logs/apps/${tomcatHttpPort}-${tomcatAppName}
+     #execRmDir "/data/www/logs/apps/${tomcatHttpPort}-${tomcatAppName}/app/*" ;
+     #execRmDir "/data/www/logs/apps/${tomcatHttpPort}-${tomcatAppName}/tomcat/*" ;
+  fi   
+}
+
+function clearFile_logs(){
+  # 清理日志
+  local tomcatAppName=$1
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  local tomcatLogsPath=/data/www/logs/apps/${tomcatHttpPort}-${tomcatAppName}
+  echoPlus info "clear ${tomcatLogsPath} logs !"
+  rm -rf ${tomcatLogsPath}/app/* ;
+  rm -rf ${tomcatLogsPath}/tomcat/* ; 
+}  
+
+
+
+function acqTomcatName(){
+  # 取tomcatName  tomcat6|tomcat7|tomcat8
+  local appName=$1
+  local tomcatHttpPort=`acqTomcatHttpPort ${appName}`
+  local tomcatName=`ls ${TOMCAT_INSTALL_PATH} | grep "tomcat.-${tomcatHttpPort}-${appName}" | awk -F- '{print $1}'`
+  echo ${tomcatName}
+}
+
+function acqTomcatTrunkName(){
+  # 取tomcat分支版本 6|7|8
+  local appName=$1
+  local tomcatName=`acqTomcatName ${appName}`
+  echo ${tomcatName/tomcat}
+}
+
+function acqTotalMem(){
+  # 取内存总数，单位m
+  local value=`free -m | grep "^Mem:" | awk '{print $2}'`
+  echo ${value}
+}
+
+function acqTomcatCnt(){
+  echo ${#TOMCAT_APP_NAME_OPT[@]}
+}
+
+function acqTomcatMaxIndex(){
+  local tomcatMaxIndex=$(( `acqTomcatCnt` - 1 ))
+  echo ${tomcatMaxIndex}
+}
+
+function calcJvmMemByName(){
+  # @Param jvm name   xms|xmx|xmn
+  # @Param jvm value
+  local name=$1
+  local jvmValue=$2
+  local value
+  if [ ".${jvmValue}" != "." ] ; then
+     echo ${jvmValue}
+  else
+     local totalMem=`acqTotalMem`
+     local availableMem=$(( ${totalMem} - 1024 ))
+     local jvmAvailableMem=$(( ${availableMem} / `acqTomcatCnt` ))
+     if [ ${jvmAvailableMem} -ge 6144 ] ;then
+        case "${name}" in
+          # 5GB内存
+          xms|xmx) value=5120m ;;
+          # 5GB内存的1/4
+          xmn) value=1280m ;;
+          xss) value=256k  ;;
+        esac
+     else 
+        case "${name}" in
+          #xms) value=$(( ${jvmAvailableMem} / 2 )) ;;
+          xms|xmx) value=$(( ${jvmAvailableMem} / 4 * 3 ))m ;;
+          xmn) value=$(( ${jvmAvailableMem} / 4 ))m ;;
+          xss) value=256k  ;;
+        esac
+     fi
+     echo "${value}"
+  fi
+}
+
+function backup(){
+  # 备份工程
+  # @param app name     (default)
+  # @param type (before|after)
+  # 备份目录 /data/www/update/update-backup/BeforeUpgrade/20131125/insurance-plugin/201858/insurance-plugin.war
+  # backup $1 /data/www/update/update-backup/AfterUpgrade/$1/${UPDATE_YYYYMMDD}/${UPDATE_HMS} ;
+  local appName=$1
+  local backupType=$2
+  local appWebPath=`acqAppWebappsFullPath ${appName}`
+  local backupPath
+  #local appWebPath="/data/www/ROOT/${appName}/${appName}"
+  if [ -d "${appWebPath}" ] && [ ".${BACKUP_WAR}" == ".true" ] ;then
+     echo "${appName} backuping...."
+     cd ${appWebPath}
+     case ${backupType} in
+          before)
+               backupPath=${BEFORE_UPGRADE_PATH}/${UPDATE_YYYYMMDD}/${appName}/${UPDATE_HMS} ;;
+          after)
+               backupPath=${AFTER_UPGRADE_PATH}/${UPDATE_YYYYMMDD}/${appName}/${UPDATE_HMS} ;;
+     esac
+     execMkdir ${backupPath}
+     zip -rq ${backupPath}/${appName}.war *
+     cd -
+  fi
+  execMkdir ${appWebPath} ;
+}
+
+
+

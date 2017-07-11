@@ -1,0 +1,252 @@
+#!/bin/bash
+#PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
+#export PATH
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  Prometheus funcs_public
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+
+function checkRoot(){
+  # 检查用户是否为root
+  if [ $(id -u) != "0" ]; then
+  	 echoPlus 31 "Error: You must be root to run this script."
+     exit 1
+  fi
+}
+
+function checkUser(){
+  # 检查用户是否为root
+  if [ $(id -u) != "0" ] ; then
+     echoPlus 91 "Error: You must be root to run this script."
+     exit 1
+  fi
+}
+
+function checkError(){
+  # 检查错误，如果运行错误则退出
+  local errorMsg=$1
+  if [ $? -ne 0 ] ; then 
+     if [ ".${errorMsg}" == "." ] ; then
+        echoPlus error "ERROR: exit ！" ;
+     else
+        echoPlus error "ERROR: ${errorMsg} !" ;
+     fi   
+     exit 1 ;
+  fi
+}
+
+function checkValueError(){
+  # 检查错误，如果运行错误则退出
+  if [ $? -ne 0 ] ; then 
+     echo "unknow"
+  fi
+}
+
+function debug_temp(){
+  # 调试用写入debug日志
+  # @param 所有参数都会执行并写入日志  ${TEMP_PATH}/${DEBUG_FILE}
+  execMkdir `dirname ${DEBUG_FILE}` ;
+  if [ ".${DEBUG}" = ".1" ]; then
+     echo $@ >> ${DEBUG_FILE}
+     $@ >> ${DEBUG_FILE}
+  else
+     $@
+  fi
+}
+
+function execMkdir(){
+  # 创建目录
+  # @Param dir
+  local dir=$1
+  [ -d ${dir} ] || mkdir -p ${dir} >/dev/null 2>&1
+}
+
+function execWget(){
+  # 下载软件
+  # @param url
+  # @param download path
+  # @param md5
+  local downloadUrl=$1
+  local downloadPath=$2
+  local md5=$3
+  local fileName=${downloadPath}`basename ${downloadUrl}`
+  # mkdir -p ${downloadPath} >/dev/null 2>&1
+  if [ ".${md5}" == "." ] ; then
+     execWget_ ${downloadUrl} ${downloadPath} ;
+  else
+     # echoPlus 32 "MD5Code: ${md5}" ;
+     if [ -f "${fileName}" ] ; then
+        local isMd5=`md5sum ${fileName} | grep -c ${md5}`
+         # echoPlus 31 "check Md5 code :"`md5sum ${fileName}`
+        [ ".${isMd5}" == ".0" ] && execWget_ ${downloadUrl} ${downloadPath} ;
+     else
+        execWget_ ${downloadUrl} ${downloadPath} ;
+     fi
+  fi
+}
+
+function execWget_(){
+  # 下载软件
+  # @param url
+  # @param download path
+  local downloadUrl=$1
+  local downloadPath=$2
+  local fileName=${downloadPath}`basename ${downloadUrl}`
+  execMkdir ${downloadPath} ;
+  [ -f ${fileName} ] && rm -f ${fileName}
+  wget ${downloadUrl} -P ${downloadPath} >/dev/null 2>&1 
+  if [ $? -eq 0 ]; then
+     echoPlus 32 "Download ${downloadUrl} to ${downloadPath}" ;
+  else 
+     echoPlus 31 "Failed to download : ${downloadUrl}" ;
+     exit 1 ;
+  fi
+}
+
+function execMv(){
+  # 备份文件 
+  # @param file 8080
+  local file=$1
+  local type='.bak'
+  [ -f ${file} ] && mv ${file} ${file}${type} >/dev/null 2>&1
+}
+
+function execUnzip(){
+  # 解压zip包
+  # @param file
+  # @param unzipPath
+  local file=$1
+  local unzipPath=$2
+  [ -d ${unzipPath} ] && rm -rf ${unzipPath} >/dev/null 2>&1
+  #echoPlus 31 "[INFO] unzip ${file} -d ${unzipPath} "
+  unzip ${file} -d ${unzipPath} >/dev/null 2>&1
+}
+
+function execLn(){
+   # 软连接文件
+   # @param source
+   # @param dist
+   local file=$1
+   local dist=$2
+   ln -sf ${file} ${dist} 
+}
+
+function execCp(){
+  # 复制目录
+  # @param  sourceDir
+  # @param  directory
+  sourceDir=$1
+  directory=$2
+  #echoPlus 31 "[INFO] cp -R ${sourceDir} ${directory} "
+  \cp -R ${sourceDir} ${directory} >/dev/null 2>&1
+}
+
+function execRmDir(){
+  # 删除目录
+  # @param path
+  local dir=$1
+  if [ -d ${dir} ] ; then
+     echoPlus 32 "deltree ${dir}" ;
+     rm -rf ${dir}
+  fi 
+}
+
+function checkFileMd5code(){
+  # 比较文件md5码
+  # @Param file
+  # @Param md5code
+  # return 1相同  0不同
+  local file=$1
+  local md5code=$2
+  if [ -f ${file} ] ; then
+     echo ${md5code} | grep -c `md5sum ${file} | awk '{print $1}'`
+  else
+     echo 0 ;
+  fi
+}
+
+function acqRandomPassword(){
+  if [ ".${PASSWORD}" == "." ] ; then
+     PASSWORD=`head -n 5 /dev/urandom | md5sum | awk '{print $1}'`
+  fi  
+  echo ${PASSWORD}
+}
+
+function installationComponent(){
+  # 检测命令，没有则yum安装
+  # @Param command
+  # @Param yum name
+  local cmdName=$1
+  local yumName=$2
+  if ! hash ${cmdName} 2>/dev/null ; then
+     execYum_ ${yumName} ;
+  fi
+}
+
+function execYum(){
+  # yum安装
+  # @Param yum names
+  local yumName isFind
+  IFS=$' \t\n'
+  for yumName in $@ ; do
+      echoPlus info "yum install ${yumName}" ;
+      isFind=`rpm -q ${yumName}`
+      if [ ".${isFind}" == "." ] ; then
+          execYum_ ${yumName} ;
+      fi
+  done
+}
+
+function execYum_(){
+   local yumName=$1
+   echoPlus 32 "yum installing ${yumName}" ;
+   yum -y install ${yumName} >/dev/null 2>&1 ;
+   checkError 
+}  
+
+function loadUrlResFile(){
+  # 载入配置
+  local download_url=$1
+  local fileName=`basename ${download_url}`
+  execWget ${download_url} ${PROMETHEUS_HOME}/etc/ ;
+  . ${PROMETHEUS_HOME}/etc/${fileName}
+}
+
+function chg_file(){
+  # 修改文件
+  # @Param file /data/www/file.txt
+  # @Param old_text   old
+  # @Param new_text   new
+  local file=$1
+  local old_text=$2
+  local new_text=$3
+  [ ! -f ${file} ] && exit 1
+  [ "`grep -c ${old_text} ${file}`" == "0" ] && return
+  sed -i "s#${old_text}#${new_text}#g" ${file}
+  checkError "chg file ${file} error"
+}
+
+
+function print_log(){
+  # eg:2016-09-26 08:26:45
+  local logTime=$(date +%Y-%m-%d\ %T)
+  local logLevel=$1
+  local msg=$2
+  # /data/www/logs/interface_ci ==>  /data/www/logs/interface_ci-2016-09-26.log
+  local logFile=$3
+  mkdir -p `dirname ${logFile}` >/dev/null 2>&1 ;
+  logFile="${logFile}-$(date +%Y-%m-%d).log"
+  echo "${logTime} ${logLevel} ${msg}" >> ${logFile}
+}
+
+
+
+
+
+
+
+
+
+

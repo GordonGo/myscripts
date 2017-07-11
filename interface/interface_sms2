@@ -1,0 +1,27 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  interface_sms
+#   AUTHOR: Liang Jian
+#   DATE: 2015-10
+#   QQ:  80327044
+#===============================================================================
+#   $1 手机号码   $3 短信内容
+
+#-------配置项--------------------------
+
+SMS_API='http://h.1069106.com:1210/Services/MsgSend.asmx/SendMsg'
+MOBILES=$1
+CONTENT="$2"
+CONTENT_UTF8=$(echo "$CONTENT" | /usr/bin/xxd -ps | sed 's/\(..\)/%\1/g' | tr -d '\n')
+
+function send_sms(){
+  local sms_param="userCode=SDG&userPass=SDG123&DesNo=${MOBILES}&Msg=${CONTENT_UTF8}&Channel=1"
+  echo $sms_param
+  echo "curl -d ${sms_param} ${SMS_API}"
+  curl -d "${sms_param}" "${SMS_API}"
+}
+
+send_sms
+
+exit 0 ;

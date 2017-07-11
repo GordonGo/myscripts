@@ -1,0 +1,198 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  EZ tomcat App update
+#   AUTHOR: Liang Jian
+#   DATE: 2014-10-10
+#   QQ:  80327044
+#===============================================================================
+#   2014-10-29   修改代码支持热部署
+#   2015-03-16   公共函数化代码
+#
+#command $1(AppName) $2(DATE/PATH) $3(diff|full)
+#/data/www/update/{yyyymmdd}/{包名.war}
+#/data/www/update/update-backup/{yyyymmdd}/{工程名}/
+#/data/www/update/update-tmp
+#appupdate battle 20141010 full
+
+
+function config(){
+  #-------配置项--------------------------
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  # 服务管理，部署过程是否重启tomcat服务 
+  # false  热部署方式，不重启服务
+  # true   非热部署方式，会重启服务
+  TOMCAT_SERVICE_RUN=false
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi      
+
+  # 加载PROMETHEUS配置
+  loadConf prometheus.conf ;
+
+  # 加载TOMCAT配置
+  loadConf tomcat_setenv.conf ;
+}
+
+function backup(){
+  # 备份工程
+  # @param app name     (default)
+  # @param type (before|after)
+  # 备份目录 /data/www/update/update-backup/BeforeUpgrade/20131125/insurance-plugin/201858/insurance-plugin.war
+  # backup $1 /data/www/update/update-backup/AfterUpgrade/$1/${UPDATE_YYYYMMDD}/${UPDATE_HMS} ;
+  local appName=$1
+  local backupType=$2
+  local appWebPath=`acqAppWebappsFullPath ${appName}`
+  local backupPath
+  #local appWebPath="/data/www/ROOT/${appName}/${appName}"
+  if [ -d "${appWebPath}" ] && [ ".${BACKUP_WAR}" == ".1" ] ;then
+  	 echo "${appName} backuping...."
+	   cd ${appWebPath}
+     case ${backupType} in
+          before)
+               backupPath=${BEFORE_UPGRADE_PATH}/${UPDATE_YYYYMMDD}/${appName}/${UPDATE_HMS} ;;
+          after)
+               backupPath=${AFTER_UPGRADE_PATH}/${UPDATE_YYYYMMDD}/${appName}/${UPDATE_HMS} ;;
+     esac
+	   execMkdir ${backupPath}
+     zip -rq ${backupPath}/${appName}.war *
+     cd -
+  fi
+  execMkdir ${appWebPath}
+}
+
+function tomcatService(){
+  # tomcat服务控制
+  # @param app name     (default)
+  # @param action       (stop)
+  # echo -e $1 "service $2 [" "\e[31;5mOK\e[0m" "]"
+  local appName=$1
+  local action=$2
+  if [ ".${TOMCAT_SERVICE_RUN}" == ".true" ] ; then
+     tomcatServiceControlOne ${appName} ${action} ;
+  fi
+}
+
+function doUpdate(){
+  # 升级
+  local appName=$1
+  local updatePath=$2
+  local updateType=$3
+  local updateFile=`acqUpdateFile ${appName} ${updatePath} ${updateType}`
+  local appWebPath=`acqAppWebappsPath ${appName}`
+  echoPlus 32 "${appName} Upgrade start" ;
+  execMkdir "/data/www/update/update-tmp" ;
+  rm -rf /data/www/update/update-tmp/* >/dev/null 2>&1
+  #停止服务
+  tomcatService ${appName} stop ;
+  #升级
+  echoPlus 32 "Unziping.... ${updateFile}" ;
+  unzip "${updateFile}" -d "/data/www/update/update-tmp/${appWebPath}" >/dev/null 2>&1
+  case "${updateType}" in
+    diff)
+       #增量升级去除ROOT目录下的配置文件
+       echoPlus 32 "updateing(diff)...."
+       unlinkAppConf ${appName} ;;
+    full)
+       echoPlus 32 "updateing(full)...." ;
+       rm -rf "/data/www/ROOT/${appName}/${appWebPath}" >/dev/null 2>&1
+       ;;
+  esac
+  \cp -R "/data/www/update/update-tmp/${appWebPath}" "/data/www/ROOT/${appName}/" 
+  #创建配置文件
+  linkAppConf ${appName} ;
+  #创建自定义配置文件
+  linkAppConfigConf ${appName} ;
+  #修改权限
+  appPermissionsConfiguration ${appName} ;
+  #清理临时文件
+  clearFile ${appName} ;
+  #启动服务
+  tomcatService ${appName} start ;
+
+}
+
+function doCheck(){
+  local tomcatAppName=$1
+  local updatePath=$2
+  local updateType=$3
+  # 检查升级文件是否存在
+  local updateFile=`acqUpdateFile ${tomcatAppName} ${updatePath} ${updateType}`
+  # 检查升级包是否完整
+  if [ "`unzip -T ${updateFile} | grep -c "Updated time stamp for"`" = "1" ] ; then
+     echoPlus 92 "${updateFile} war packet inspection by" ;
+     # 调用升级函数
+     # start_update $cmdAppName $cmdAppPath $cmdUpdateType;
+  else
+  	 echoPlus 91 "${updateFile} package is damaged" ;
+     exit 1 ;
+  fi
+}
+
+function acqUpdateFile(){
+  # 取升级文件path
+  # @Param appName
+  # @Param updatePath
+  # @Param updateType ()
+  local appName=$1
+  local updatePath=$2
+  local updateType=$3
+  local updatePkgType=`updateType2PkgType ${updateType}`
+  local updateFilePath=${updatePath}/${appName}.${updatePkgType}
+  if [ -f ${updateFilePath} ] ; then
+     echo ${updateFilePath}
+     return 0 ;
+  fi
+  if [ -f "/data/www/update/${updateFilePath}" ] ; then
+     echo "/data/www/update/${updateFilePath}"
+     return 0 ;
+  fi
+  # 文件未找到
+  exit 1 ;
+}
+
+function updateType2PkgType(){
+  # 转换升级参数为升级包类型
+  # full = war
+  # diff = zip
+  local updateType=$1
+  case "${updateType}" in
+       diff|DIFF) local updatePkgType="zip" ;;
+       full|FULL) local updatePkgType="war" ;;
+       *) exit 1 ;;
+  esac
+  echo ${updatePkgType}
+}
+
+function doParam(){
+  # 解析参数
+  if [ $# == 3 ] ;then
+     local tomcatAppName=$1
+     local updatePath=$2
+     local updateType=$3
+     local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+     local appConfPath="/data/www/conf/apps/${tomcatAppName}"
+  else
+     exit 1
+  fi
+
+  doCheck ${tomcatAppName} ${updatePath} ${updateType};
+  #echo -e "\e[91;5mCheck for errors and try again\e[0m"
+}
+
+
+config ;
+doParam $@ ;
+backup $1 before ;
+doUpdate $@ ;
+backup $1 after ;
+
+
+

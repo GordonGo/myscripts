@@ -1,0 +1,44 @@
+#!/bin/bash
+
+function config(){
+
+  ZABBIX_KEY="Nginx.Max.Request_time"
+
+  SERVER_NAME="ServerStatistic"
+
+
+  DEBUG_FILE_NAME=$(basename $0).log
+  # 加载函数
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi      
+
+  # 加载statistic配置
+  #loadConf statistic.conf ;
+
+}
+
+function acqTimestamp(){
+  local timestamp=$(date +%s)
+  echo ${timestamp} 
+}
+
+
+function acqValue(){
+  local value=`tail -n 200 /data/log/nginx/access.log | awk '{print $(NF-3)}' |sort |tail -n1`
+  echo ${value}
+}
+
+function doStatistic(){
+  local zabbix_value=`acqValue`
+  if [ -n "${zabbix_value}" ] ; then
+     #echo "${SERVER_NAME} ${ZABBIX_KEY} `acqTimestamp` ${zabbix_value}"
+     echo "${SERVER_NAME} ${ZABBIX_KEY} `acqTimestamp` ${zabbix_value}" | /usr/local/zabbix/bin/zabbix_sender -T -vv -c /usr/local/zabbix/etc/zabbix_agentd.conf -i-
+  fi
+}
+
+config ;
+doStatistic ;

@@ -1,0 +1,570 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  Prometheus funcs_tomcat_template
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+
+function createTomcatContext(){
+# tomcat.context.xml 配置文件摸板
+# @param tomcatPath
+local tomcatConfPath=$1
+execMv ${tomcatConfPath}/context.xml ;
+cat << EOF > ${tomcatConfPath}/context.xml
+<?xml version='1.0' encoding='utf-8'?>
+<Context swallowOutput="true">
+    <WatchedResource>WEB-INF/web.xml</WatchedResource>
+</Context>
+EOF
+# execLn ${tomcatConfPath}/context.xml /data/www/conf/.context-${tomcatHttpPort}-${tomcatAppName}.xml
+}
+
+
+
+function createTomcatLog4jProperties(){
+# tomcat.log4j.properties 配置文件摸板
+# @param tomcatAppName  project
+# @param tomcatName     tomcat6
+local tomcatAppName=$1
+local tomcatName=$2
+local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+local tomcatLibPath=${TOMCAT_INSTALL_PATH}/${tomcatName}-${tomcatHttpPort}-${tomcatAppName}/lib
+cat << EOF > ${tomcatLibPath}/log4j.properties
+log4j.rootLogger=INFO,CATALINA
+log4j.appender.CATALINA=org.apache.log4j.DailyRollingFileAppender
+log4j.appender.CATALINA.File=/data/www/logs/apps/${tomcatHttpPort}-${tomcatAppName}/tomcat/catalina-log
+log4j.appender.CATALINA.Append=true
+log4j.appender.CATALINA.Encoding=UTF-8
+log4j.appender.CATALINA.DatePattern='.'yyyy-MM-dd'.log'
+log4j.appender.CATALINA.layout=org.apache.log4j.PatternLayout
+log4j.appender.CATALINA.layout.ConversionPattern=%d [%t] %-5p %c- %m%n
+EOF
+}
+
+function createTomcatUserXml(){
+# tomcat.tomcat-users.xml 配置文件摸板
+# @param tomcatAppName  project
+# @param tomcatName     tomcat6
+local tomcatAppName=$1
+local tomcatName=$2
+local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+local tomcatConfPath=${TOMCAT_INSTALL_PATH}/${tomcatName}-${tomcatHttpPort}-${tomcatAppName}/conf
+if [ ".${PROBE_PASSWORD}" == "." ] ; then
+   PROBE_PASSWORD=`acqRandomPassword`
+fi   
+execMv ${tomcatConfPath}/tomcat-users.xml ;
+cat << EOF > ${tomcatConfPath}/tomcat-users.xml
+<?xml version='1.0' encoding='utf-8'?>
+<tomcat-users>
+  <role rolename= "manager"/> 
+  <role rolename= "tomcat"/> 
+  <role rolename= "admin"/> 
+  <role rolename= "poweruser"/> 
+  <role rolename= "probeuser"/>
+  <user username= "${PROBE_USER}" password= "${PROBE_PASSWORD}" roles="admin,user,manager,poweruser,probeuser"/> 
+</tomcat-users>
+EOF
+execLn ${tomcatConfPath}/tomcat-users.xml /data/www/conf/tomcat-users-${tomcatHttpPort}-${tomcatAppName}.xml
+}
+
+function createTomcatServerXml(){
+  local tomcatName=$2
+  case "${tomcatName}" in
+    tomcat6)
+      createTomcatServerXml_6 $@ ;;
+    tomcat7)
+      createTomcatServerXml_7 $@ ;;
+    tomcat8)
+      createTomcatServerXml_8 $@ ;;
+  esac
+}
+
+function acqTomcatHttpURIEncoding(){
+   [ ".${TOMCAT_HTTP_URI_ENCODING}" == ".null" ] && return ;
+   [ ".${TOMCAT_HTTP_URI_ENCODING}" == "." ] && return ;
+   echo "URIEncoding=\"${TOMCAT_HTTP_URI_ENCODING}\""
+}
+
+function createTomcatServerXml_6() {
+  # tomcat.server.xml 配置文件摸板
+  # @param tomcatAppName  project
+  # @param tomcatName     tomcat6
+  # @param tomcatShutdownPort     8005
+  # @param tomcatJmxRmiRegistrPortPlatform   10001
+  # @param tomcatJmxRmiServerPortPlatform    10002
+  # @param appBasePath    project
+
+  # tomcat用页面的编码去处理post，推荐使用。
+  # useBodyEncodingForURI="true"
+  # TOMCAT_USE_BODY_ENCODING_FOR_URL=false
+  # 强制指定编码了，所以一旦有其他编码的页面存在，就会出问题，如果没有规范制约则不建议用。
+  # URIEncoding="UTF-8"
+  # TOMCAT_URI_ENCODING_UTF-8=false
+
+  local tomcatAppName=$1
+  local tomcatName=$2
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  local tomcatShutdownPort=`acqTomcatShutdownPort ${tomcatAppName}`
+  local tomcatJmxRmiRegistrPortPlatform=`acqTomcatJmxRegistryPortPlatform ${tomcatAppName}`
+  local tomcatJmxRmiServerPortPlatform=`acqTomcatJmxServerPortPlatform ${tomcatAppName}`
+  local appWebappsPath=`acqAppWebappsPath ${tomcatAppName}`
+  # "/data/www/ROOT/${TOMCAT_SERVERXML_WEBAPPSPATH}"
+  local appBasePath=/data/www/ROOT/${tomcatAppName}
+  local tomcatConfPath=${TOMCAT_INSTALL_PATH}/${tomcatName}-${tomcatHttpPort}-${tomcatAppName}/conf
+  local useBodyEncodingForURI
+  local uriEncoding=`acqTomcatHttpURIEncoding`
+  execMv ${tomcatConfPath}/server.xml ;
+  cat << EOF > ${tomcatConfPath}/server.xml
+<?xml version='1.0' encoding='utf-8'?>
+<Server port="${tomcatShutdownPort}" shutdown="SHUTDOWN">
+<Listener className="org.apache.catalina.core.AprLifecycleListener" />
+<Listener className="org.apache.catalina.core.JasperListener" />
+<Listener className="org.apache.catalina.core.JreMemoryLeakPreventionListener" />
+<Listener className="org.apache.catalina.mbeans.ServerLifecycleListener" />
+<Listener className="org.apache.catalina.mbeans.GlobalResourcesLifecycleListener" />
+<Listener className="org.apache.catalina.mbeans.JmxRemoteLifecycleListener" 
+          rmiRegistryPortPlatform="${tomcatJmxRmiRegistrPortPlatform}" 
+          rmiServerPortPlatform="${tomcatJmxRmiServerPortPlatform}" />
+<GlobalNamingResources>
+<Resource name="UserDatabase"
+          auth="Container"
+          type="org.apache.catalina.UserDatabase"
+          description="User database that can be updated and saved"
+          factory="org.apache.catalina.users.MemoryUserDatabaseFactory"
+          pathname="conf/tomcat-users.xml" />
+</GlobalNamingResources>
+<Service name="Catalina"> 
+<Connector port="${tomcatHttpPort}" protocol="HTTP/1.1"          
+           connectionTimeout="20000" ${uriEncoding}
+           maxSpareThreads="150" maxThreads="300"
+           />
+<Engine name="Catalina" defaultHost="localhost">
+<Realm className="org.apache.catalina.realm.UserDatabaseRealm"
+       resourceName="UserDatabase"/>
+<Host name="localhost" debug="0" appBase="${appBasePath}"
+      unpackWARs="true" autoDeploy="false" deployOnStartup="true"
+      xmlValidation="false" xmlNamespaceAware="false" >
+EOF
+  if [ "${appWebappsPath}" != "ROOT" ] ; then  
+     cat << EOF >> ${tomcatConfPath}/server.xml      
+      <Context path="/${appWebappsPath}"   
+               docBase="${appWebappsPath}"
+               privileged="true" 
+               antiResourceLocking="false" 
+               antiJARLocking="false" 
+               reloadable="false" >
+      </Context>
+EOF
+  fi
+  cat << EOF >> ${tomcatConfPath}/server.xml      
+</Host>
+</Engine>
+</Service>
+</Server>
+EOF
+execLn ${tomcatConfPath}/server.xml /data/www/conf/server-${tomcatHttpPort}-${tomcatAppName}.xml
+}
+
+function createTomcatServerXml_7() {
+  # tomcat.server.xml 配置文件摸板
+  # @param tomcatAppName  project
+  # @param tomcatName     tomcat6
+  # @param tomcatShutdownPort     8005
+  # @param tomcatJmxRmiRegistrPortPlatform   10001
+  # @param tomcatJmxRmiServerPortPlatform    10002
+  # @param appBasePath    project
+
+  # tomcat用页面的编码去处理post，推荐使用。
+  # useBodyEncodingForURI="true"
+  # TOMCAT_USE_BODY_ENCODING_FOR_URL=false
+  # 强制指定编码了，所以一旦有其他编码的页面存在，就会出问题，如果没有规范制约则不建议用。
+  # URIEncoding="UTF-8"
+  # TOMCAT_URI_ENCODING_UTF-8=false
+
+  local tomcatAppName=$1
+  local tomcatName=$2
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  local tomcatShutdownPort=`acqTomcatShutdownPort ${tomcatAppName}`
+  local tomcatJmxRmiRegistrPortPlatform=`acqTomcatJmxRegistryPortPlatform ${tomcatAppName}`
+  local tomcatJmxRmiServerPortPlatform=`acqTomcatJmxServerPortPlatform ${tomcatAppName}`
+  local appWebappsPath=`acqAppWebappsPath ${tomcatAppName}`
+  # "/data/www/ROOT/${TOMCAT_SERVERXML_WEBAPPSPATH}"
+  local appBasePath=/data/www/ROOT/${tomcatAppName}
+  local tomcatConfPath=${TOMCAT_INSTALL_PATH}/${tomcatName}-${tomcatHttpPort}-${tomcatAppName}/conf
+  local useBodyEncodingForURI
+  local uriEncoding=`acqTomcatHttpURIEncoding`
+  execMv ${tomcatConfPath}/server.xml ;
+  cat << EOF > ${tomcatConfPath}/server.xml
+<?xml version='1.0' encoding='utf-8'?>
+<Server port="${tomcatShutdownPort}" shutdown="SHUTDOWN">
+<Listener className="org.apache.catalina.startup.VersionLoggerListener" />
+<Listener className="org.apache.catalina.core.AprLifecycleListener" SSLEngine="on" />
+<Listener className="org.apache.catalina.core.JasperListener" />
+<Listener className="org.apache.catalina.core.JreMemoryLeakPreventionListener" />
+<Listener className="org.apache.catalina.mbeans.GlobalResourcesLifecycleListener" />
+<Listener className="org.apache.catalina.core.ThreadLocalLeakPreventionListener" />
+<Listener className="org.apache.catalina.mbeans.JmxRemoteLifecycleListener" 
+          rmiRegistryPortPlatform="${tomcatJmxRmiRegistrPortPlatform}" 
+          rmiServerPortPlatform="${tomcatJmxRmiServerPortPlatform}" />
+<GlobalNamingResources>
+<Resource name="UserDatabase"
+          auth="Container"
+          type="org.apache.catalina.UserDatabase"
+          description="User database that can be updated and saved"
+          factory="org.apache.catalina.users.MemoryUserDatabaseFactory"
+          pathname="conf/tomcat-users.xml" />
+</GlobalNamingResources>
+<Service name="Catalina"> 
+<Connector port="${tomcatHttpPort}" protocol="HTTP/1.1" 
+           connectionTimeout="20000" ${uriEncoding}
+           maxSpareThreads="150" maxThreads="300"
+           />
+<Engine name="Catalina" defaultHost="localhost">
+<Realm className="org.apache.catalina.realm.UserDatabaseRealm"
+       resourceName="UserDatabase"/>
+<Host name="localhost" debug="0" appBase="${appBasePath}"
+      unpackWARs="true" autoDeploy="false" deployOnStartup="true"
+      xmlValidation="false" xmlNamespaceAware="false" >
+EOF
+  if [ "${appWebappsPath}" != "ROOT" ] ; then  
+     cat << EOF >> ${tomcatConfPath}/server.xml      
+      <Context path="/${appWebappsPath}"   
+               docBase="${appWebappsPath}"
+               privileged="true" 
+               antiResourceLocking="false" 
+               antiJARLocking="false" 
+               reloadable="false" >
+      </Context>
+EOF
+  fi
+  cat << EOF >> ${tomcatConfPath}/server.xml      
+</Host>
+</Engine>
+</Service>
+</Server>
+EOF
+execLn ${tomcatConfPath}/server.xml /data/www/conf/server-${tomcatHttpPort}-${tomcatAppName}.xml
+}
+
+function createTomcatServerXml_8() {
+  # tomcat.server.xml 配置文件摸板
+  # @param tomcatAppName  project
+  # @param tomcatName     tomcat6
+  # @param tomcatShutdownPort     8005
+  # @param tomcatJmxRmiRegistrPortPlatform   10001
+  # @param tomcatJmxRmiServerPortPlatform    10002
+  # @param appBasePath    project
+
+  # tomcat用页面的编码去处理post，推荐使用。
+  # useBodyEncodingForURI="true"
+  # TOMCAT_USE_BODY_ENCODING_FOR_URL=false
+  # 强制指定编码了，所以一旦有其他编码的页面存在，就会出问题，如果没有规范制约则不建议用。
+  # URIEncoding="UTF-8"
+  # TOMCAT_URI_ENCODING_UTF-8=false
+
+  local tomcatAppName=$1
+  local tomcatName=$2
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  local tomcatShutdownPort=`acqTomcatShutdownPort ${tomcatAppName}`
+  local tomcatJmxRmiRegistrPortPlatform=`acqTomcatJmxRegistryPortPlatform ${tomcatAppName}`
+  local tomcatJmxRmiServerPortPlatform=`acqTomcatJmxServerPortPlatform ${tomcatAppName}`
+  local appWebappsPath=`acqAppWebappsPath ${tomcatAppName}`
+  # "/data/www/ROOT/${TOMCAT_SERVERXML_WEBAPPSPATH}"
+  local appBasePath=/data/www/ROOT/${tomcatAppName}
+  local tomcatConfPath=${TOMCAT_INSTALL_PATH}/${tomcatName}-${tomcatHttpPort}-${tomcatAppName}/conf
+  local useBodyEncodingForURI
+  local uriEncoding=`acqTomcatHttpURIEncoding`
+  execMv ${tomcatConfPath}/server.xml ;
+  cat << EOF > ${tomcatConfPath}/server.xml
+<?xml version='1.0' encoding='utf-8'?>
+<Server port="${tomcatShutdownPort}" shutdown="SHUTDOWN">
+<Listener className="org.apache.catalina.startup.VersionLoggerListener" />
+<Listener className="org.apache.catalina.core.AprLifecycleListener" SSLEngine="on" />
+<Listener className="org.apache.catalina.core.JreMemoryLeakPreventionListener" />
+<Listener className="org.apache.catalina.mbeans.GlobalResourcesLifecycleListener" />
+<Listener className="org.apache.catalina.core.ThreadLocalLeakPreventionListener" />
+<Listener className="org.apache.catalina.mbeans.JmxRemoteLifecycleListener" 
+          rmiRegistryPortPlatform="${tomcatJmxRmiRegistrPortPlatform}" 
+          rmiServerPortPlatform="${tomcatJmxRmiServerPortPlatform}" />
+<GlobalNamingResources>
+<Resource name="UserDatabase"
+          auth="Container"
+          type="org.apache.catalina.UserDatabase"
+          description="User database that can be updated and saved"
+          factory="org.apache.catalina.users.MemoryUserDatabaseFactory"
+          pathname="conf/tomcat-users.xml" />
+</GlobalNamingResources>
+<Service name="Catalina"> 
+<Connector port="${tomcatHttpPort}" protocol="HTTP/1.1" 
+           connectionTimeout="20000" ${uriEncoding}
+           maxSpareThreads="150" maxThreads="300"
+           />
+<Engine name="Catalina" defaultHost="localhost">
+<Realm className="org.apache.catalina.realm.UserDatabaseRealm"
+       resourceName="UserDatabase"/>
+<Host name="localhost" debug="0" appBase="${appBasePath}"
+      unpackWARs="true" autoDeploy="false"
+      xmlValidation="false" xmlNamespaceAware="false" >
+EOF
+  if [ "${appWebappsPath}" != "ROOT" ] ; then  
+     cat << EOF >> ${tomcatConfPath}/server.xml      
+      <Context path="/${appWebappsPath}"   
+               docBase="${appWebappsPath}"
+               privileged="true" 
+               antiResourceLocking="false" 
+               antiJARLocking="false" 
+               reloadable="false" >
+      </Context>
+EOF
+  fi
+  cat << EOF >> ${tomcatConfPath}/server.xml      
+</Host>
+</Engine>
+</Service>
+</Server>
+EOF
+execLn ${tomcatConfPath}/server.xml /data/www/conf/server-${tomcatHttpPort}-${tomcatAppName}.xml
+}
+
+function createTomcatSetenvSh() {
+  # /data/www/conf/tmez_setenv.sh 配置文件摸板
+  # @param tomcatAppName  project
+  # @param tomcatName     tomcat6
+  local tomcatAppName=$1
+  local tomcatName=$2
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  local tomcatBinPath=${TOMCAT_INSTALL_PATH}/${tomcatName}-${tomcatHttpPort}-${tomcatAppName}/bin
+cat << EOF > ${tomcatBinPath}/setenv.sh
+#!/bin/bash
+
+# 加载函数
+if [ -r "\${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+   . \${PROMETHEUS_HOME}/funcs/funcs
+else
+   echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+   exit 1 ;
+fi
+# 加载TOMCAT配置
+loadConf tomcat_setenv.conf ;
+
+#RMI_SERVER_NAME=${RMI_SERVER_NAME}
+RMI_SERVER_NAME=\`acqInternalIp\`
+
+# SET_JVM_Xms=${SET_JVM_Xms}
+# SET_JVM_Xmx=${SET_JVM_Xmx}
+# SET_JVM_Xmn=${SET_JVM_Xmn}
+# Xss default  256k
+# SET_JVM_Xss=${SET_JVM_Xss}
+SET_JVM_XXPermSize=${SET_JVM_XXPermSize}
+SET_JVM_XXMaxPermSize=${SET_JVM_XXMaxPermSize}
+
+CATALINA_TMP=/data/www/data/temp
+
+# catalina daemon日志
+CATALINA_OUT="/data/www/logs/apps/${tomcatHttpPort}-${tomcatAppName}/tomcat/catalina-daemon.\$(date +%Y-%m-%d).log"
+# catalina-daemop.pid路径
+CATALINA_PID="/data/www/logs/apps/${tomcatHttpPort}-${tomcatAppName}/tomcat/catalina-daemon.pid"
+# 不要修改代码
+SET_JVM_Xms=\`calcJvmMemByName xms \${SET_JVM_Xms}\`
+SET_JVM_Xmx=\`calcJvmMemByName xmx \${SET_JVM_Xmx}\`
+SET_JVM_Xmn=\`calcJvmMemByName xmn \${SET_JVM_Xmn}\`
+SET_JVM_Xss=\`calcJvmMemByName xss \${SET_JVM_Xss}\`
+${SET_JAVA_OPTS}
+${SET_CATALINA_OPTS}
+
+# 自定义参数
+`acqTomcatJavaOpts ${tomcatAppName}`
+EOF
+}
+
+function createTomcatSetenvSh_temp() {
+# /data/www/conf/tmez_setenv.sh 配置文件摸板
+# @param tomcatAppName  project
+# @param tomcatName     tomcat6
+local tomcatAppName=$1
+local tomcatName=$2
+local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+local tomcatBinPath=${TOMCAT_INSTALL_PATH}/${tomcatName}-${tomcatHttpPort}-${tomcatAppName}/bin
+cat << EOF > ${tomcatBinPath}/setenv.sh
+#!/bin/bash
+
+function acqInternalIp(){
+  # 获取内网ip 无参数则从eth0-eth3取值
+  # @param eth0
+  # return VALUE 192.168.10.10
+  local networkInterface=\$1
+  if [ ".\${networkInterface}" == "." ] ; then
+     for ethNum in \`seq 0 3\` ; do
+         local ethX="eth\${ethNum}"
+         local ip=\`acqInternalIp \${ethX}\`
+         if [ ".\${ip}" != "." ] ; then
+            echo \${ip}
+            return 0 ;
+         fi
+     done
+  else
+     ifconfig \${networkInterface} 2>/dev/null | awk '/inet addr/ {print \$2}' | cut -f2 -d ":"
+     #checkValueError ;
+  fi
+}
+
+#RMI_SERVER_NAME=${RMI_SERVER_NAME}
+RMI_SERVER_NAME=\`acqInternalIp\`
+
+SET_JVM_Xms=${SET_JVM_Xms}
+SET_JVM_Xmx=${SET_JVM_Xmx}
+SET_JVM_Xmn=${SET_JVM_Xmn}
+SET_JVM_Xss=${SET_JVM_Xss}
+SET_JVM_XXPermSize=${SET_JVM_XXPermSize}
+SET_JVM_XXMaxPermSize=${SET_JVM_XXMaxPermSize}
+${SET_JAVA_OPTS}
+${SET_CATALINA_OPTS}
+EOF
+}
+
+function delTomcatInstllFile(){
+  # 清理历史数据
+  # @param tomcat app name
+  local tomcatAppName=$1
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  local appWebappsPath=`acqAppWebappsPath ${tomcatAppName}`
+  local tomcatName=`acqTomcatName ${tomcatAppName}`
+  local tomcatAppPath=${TOMCAT_INSTALL_PATH}/${tomcatName}-${tomcatHttpPort}-${tomcatAppName}
+  local tomcatConfPath=/data/www/conf/apps/${tomcatAppName}
+  local tomcatWebappPath=/data/www/ROOT/${tomcatAppName}
+  local tomcatLogsPath=/data/www/logs/apps/${tomcatHttpPort}-${tomcatAppName}
+  local tomcatInstallLink=/data/www/install/${tomcatName}-${tomcatHttpPort}-${tomcatAppName}
+  echoPlus 32 "Clean residual data ..."
+  execMkdir /data/www/backups ;
+  if [ -d ${tomcatAppPath} ] ; then
+     echoPlus 32 "Find ${tomcatAppPath} directory under the installed ..."
+     execRmDir ${tomcatAppPath} ;
+  fi
+  # 清理配置
+  if [ -d ${tomcatConfPath} ] ; then
+     echoPlus 32 "Find ${tomcatConfPath} directory exists !" ;
+     delTomcatInstllFile_conf ${tomcatAppName} ;
+  fi
+  # 清理ROOT目录
+  if [ -d "${tomcatWebappPath}" ] ;then
+     echoPlus 32 "Find ${tomcatWebappPath} directory exists !" ;
+     execRmDir ${tomcatWebappPath}/host-manager ;
+     execRmDir ${tomcatWebappPath}/manager ;
+     execRmDir ${tomcatWebappPath}/probe ;
+     delTomcatInstllFile_root ${tomcatAppName} ;
+  fi
+  # 清理日志
+  if [ -d "${tomcatLogsPath}" ] ;then
+     echoPlus 32 "Find ${tomcatLogsPath} directory exists !" ;
+     delTomcatInstllFile_logs ${tomcatAppName} ;
+  fi
+  # 清理连接
+  unlink /data/www/conf/server-${tomcatHttpPort}-${tomcatAppName}.xml >/dev/null 2>&1
+  unlink /data/www/conf/.setenv-${tomcatHttpPort}-${tomcatAppName}.sh >/dev/null 2>&1
+  unlink /data/www/conf/tomcat-users-${tomcatHttpPort}-${tomcatAppName}.xml >/dev/null 2>&1
+  unlink /data/www/install/${tomcatName}-${tomcatHttpPort}-${tomcatAppName} >/dev/null 2>&1
+}
+
+function delTomcatInstllFile_logs(){
+  [ ".${DEL_TOMCAT_LOGS}" == ".false" ] && return ;
+  local tomcatAppName=$1
+  local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+  local tomcatLogsPath=/data/www/logs/apps/${tomcatHttpPort}-${tomcatAppName}
+  execRmDir ${tomcatLogsPath} ;
+}
+
+function delTomcatInstllFile_root(){
+  [ ".${DEL_TOMCAT_ROOT}" == ".false" ] && return ;
+  local tomcatAppName=$1
+  local tomcatWebappPath=/data/www/ROOT/${tomcatAppName}
+  execRmDir ${tomcatWebappPath}
+}
+
+function delTomcatInstllFile_conf(){
+  [ ".${DEL_TOMCAT_CONF}" == ".false" ] && return ;  
+  local tomcatAppName=$1
+  local tomcatConfPath=/data/www/conf/apps/${tomcatAppName}
+  execRmDir ${tomcatConfPath}
+}
+
+
+function createTomcatVersion(){
+  # 安全配置，修改tomcat的版本信息
+  local tomcatPath=$1
+  local tomcatServerInfoPath=${tomcatPath}/lib/org/apache/catalina/util
+  # TOMCAT_DISPLAY_VERSION='Shunwang Servlet Server 1.0.0x'
+  [ ".${TOMCAT_DISPLAY_VERSION}" == "." ] && return ;
+  execMkdir ${tomcatServerInfoPath} ;
+  echo "server.info=${TOMCAT_DISPLAY_VERSION}" > ${tomcatServerInfoPath}/ServerInfo.properties
+}
+
+function echoAllTomcatVersion(){
+# 显示所有可安装的tomcat版本
+# Select Tomcat Version:
+# NUM   Tomcat-Version                 DownLoadUrl  
+# ----------------------------------------------------------------------------------------------------------                                                                                                
+# 0     apache-tomcat-6.0.39           http://mirrors.hust.edu.cn/apache/tomcat/tomcat-6/v6.0.39/bin/apache-tomcat-6.0.39.zip                        
+# 1     apache-tomcat-6.0.37           http://archive.apache.org/dist/tomcat/tomcat-6/v6.0.37/bin/apache-tomcat-6.0.37.zip                           
+# 2     apache-tomcat-7.0.52           http://archive.apache.org/dist/tomcat/tomcat-7/v7.0.52/bin/apache-tomcat-7.0.52.zip                           
+# 3     apache-tomcat-8.0.3            http://archive.apache.org/dist/tomcat/tomcat-8/v8.0.3/bin/apache-tomcat-8.0.3.zip 
+local tomcatMaxCnt=$(( ${#TOMCAT_VERSION_OPT[@]} - 1 ))
+stty erase "^H"
+echo ${DIVIDING_LINE}
+printf "%-5s %-30s %-110s\n" Num Tomcat-Version DownLoadUrl
+echo ${DIVIDING_LINE}
+for((i=0;i<=${tomcatMaxCnt};i++)) ; do
+    local tomcatVersionNum=${TOMCAT_VERSION_OPT[$i]}
+    local tomcatDownloadUrl=`eval echo "$""TOMCAT_PKG_""${tomcatVersionNum}"`
+    local tomcatVersion=`basename ${tomcatDownloadUrl/.zip/}`
+    printf "%-5s %-30s %-110s\n" $i ${tomcatVersion} ${tomcatDownloadUrl}
+done
+}
+
+function echoAllProbeVersion(){
+# 显示所有可安装的probe版本
+local probeMaxCnt=$(( ${#PSI_PROBE_VERSION_OPT[@]} - 1 ))
+stty erase "^H"
+echo ${DIVIDING_LINE}
+printf "%-5s %-30s %-110s\n" Num PsiProbe-Version DownLoadUrl
+echo ${DIVIDING_LINE}
+for((i=0;i<=${probeMaxCnt};i++)); do
+   local psiProbeVersionNum=${PSI_PROBE_VERSION_OPT[$i]}                      
+   local psiProbeDownloadUrl=`eval echo "$""PROBE_PKG_""${psiProbeVersionNum}"`
+   local psiProbeVersion=`basename ${psiProbeDownloadUrl/.zip/}`
+   printf "%-5s %-30s %-110s\n" $i ${psiProbeVersion} ${psiProbeDownloadUrl}
+done
+}
+
+function echoAllTomcatAppName(){
+# 显示所有可安装的tomcat实例     
+local tomcatMaxCnt=$(( ${#TOMCAT_APP_NAME_OPT[@]} - 1 ))
+stty erase "^H"
+echo ${DIVIDING_LINE}
+echoPlus 32 "Select Tomcat-app:" ;
+printf "%-5s %-25s\n" Num Port/AppName 
+echo ${DIVIDING_LINE}
+for((i=0;i<=${tomcatMaxCnt};i++)); do
+   local tomcatAppName=${TOMCAT_APP_NAME_OPT[$i]}
+   local tomcatHttpPort=${TOMCAT_HTTP_PORT_OPT[$i]}
+   printf "%-5s %-25s\n" $i ${tomcatHttpPort}/${tomcatAppName}
+done
+echo ${DIVIDING_LINE}
+}
+
+function echoAllJdkVersion(){
+  # 显示所有可安装的jdk版本
+  # NUM   Tomcat-Version                 DownLoadUrl  
+  #----------------------------------------------------------------------------------------------------------                                                                                                
+  #0     jdk1.6.0_45           http://res.swomc.net/software/java/jdk6/jdk-6u45-linux-x64-rpm.bin                       
+  local jdkMaxCnt=$(( ${#JDK_VERSION_OPT[@]} - 1 ))
+  echoPlus 32 "Select JDK Version:"
+  echo ${DIVIDING_LINE}
+  printf "%-5s %-30s %-110s\n" Num JDK-Version DownLoadUrl
+  echo ${DIVIDING_LINE}
+  for((i=0;i<=${jdkMaxCnt};i++)) ; do
+     local jdkVersion=${JDK_VERSION_OPT[$i]}
+     local jdkDownloadUrl=`eval echo "$""JDK_PKG_""${jdkVersion}"`
+     printf "%-5s %-30s %-110s\n" $i ${jdkVersion} ${jdkDownloadUrl}
+  done
+}

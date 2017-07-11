@@ -1,0 +1,66 @@
+#!/bin/bash
+
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  tomcat service manager
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+
+
+# tcl -l 30 查看30天后的日志
+# tcl -c 10 清理10天后的日志
+
+function config(){
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi
+
+  LOGS_BASE_PATH='/data/www/logs'
+
+  # 加载TOMCAT配置
+  loadConf tomcat_setenv.conf ;
+}
+
+function doParam(){
+  # 检查参数是否合法
+  if [ $# == 0 ] ; then
+     tomcatServiceInfo ;
+     return ;
+  fi
+
+  if [ $# == 2 ] ; then
+     case "$1" in
+          l|-l|-list)
+              list_logs $2
+              exit 0 ;;
+          c|-c|-clean)
+              clean_logs $2
+              exit 0 ;;
+          -h|-help|help)
+              prometheus_help $(basename $0) 
+              exit 0 ;;    
+     esac
+     return ;
+  fi             
+}
+
+function list_logs(){
+  local day=$1
+  find ${LOGS_BASE_PATH} -type f -mtime +${day}
+}
+
+function clean_logs(){
+  local day=$1
+  find ${LOGS_BASE_PATH} -type f -mtime +${day} -exec rm -f {} \;
+}
+
+config ;
+doParam $@ ;
+exit 0 ;

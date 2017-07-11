@@ -1,0 +1,129 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  ezbackup
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+# 文件或目录定时备份程序
+function config(){
+  . /etc/profile
+  
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  # 备份目录
+  BACKUP_PATH='/data/www/backups'
+
+  # 备份保留天数 如果value=0 或 null 则不清理备份
+  BACKUP_DAY=7
+
+  # 备份源
+  BACKUP_SOURCE=
+ 
+  # 备份文件目录名
+  BACKUP_DIR=
+
+  # 备份文件格式 zip
+  BACKUP_TYPE=zip
+
+  # 备份文件的名称如下
+  # filename_$(date +%Y%m%d-%R).[zip|tar]
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi   
+}
+
+function _help() {
+  # 显示帮助
+  echoPlus 32 "ezbackup 源目录或文件 目标相对路径 压缩方式[tar|zip]"
+  echoPlus 32 "ezbackup -path=/data/www/ROOT/def/back.txt -name=app"
+}
+
+function doParam(){
+  local param=
+  [ $# == 0 ] && return ;
+  for param in "$@" ; do
+      local paramName=`echo ${param} | awk -F'=' '{print $1}'`
+      local paramValue=`echo ${param} | awk -F'=' '{print $NF}'`
+      case "${paramName}" in
+          #   -file=http://www.xxx.com/conf/tomcat_setenv.conf    default=local(tomcat_setenv.conf)
+          #   此参数暂不支持
+          -path)
+              BACKUP_SOURCE=${paramValue}
+              ;;
+          -name)
+              BACKUP_DIR=${paramValue} 
+              ;;
+          -type)
+              BACKUP_TYPE=${paramValue}
+              ;;
+          －day)
+              BACKUP_DAY=${paramValue}
+              ;;
+          －backup.path)
+              BACKUP_PATH=${paramValue}
+              ;;    
+          -h|-help)
+              #prometheus_help $(basename $0) 
+              _help
+              exit 0 ;;
+      esac
+  done
+  processor_backup_day ;
+}
+
+function processor_backup_day(){
+  BACKUP_DAY=$(( ${BACKUP_DAY} - 1 )) ;
+}
+
+function doCheck(){
+  # check 备份源路径
+  if [ ! -d "${BACKUP_SOURCE}" ] ; then 
+     echoPlus error "BACKUP DIR NOT FOUND !"
+     exit 1;
+  fi  
+  # check 备份目标目录名
+  if [ ".${BACKUP_DIR}" == "." ] ; then
+     BACKUP_DIR=`basename ${BACKUP_SOURCE}`
+  fi
+}
+
+function doBackup(){
+  execMkdir ${BACKUP_PATH}/${BACKUP_DIR} ;
+  doBackup_dir
+}
+
+function doBackup_dir(){
+  cd ${BACKUP_SOURCE}
+  zip -rq ${BACKUP_PATH}/${BACKUP_DIR}/`acqBackupFileName` * ;
+  echoPlus info "Backup ${BACKUP_PATH}/${BACKUP_DIR}/`acqBackupFileName`" ;
+}
+
+function doRollBackup(){
+  # 滚动备份，保留n天
+  echoPlus info "Backup Roll ..."
+  /usr/bin/find ${BACKUP_PATH}/${BACKUP_DIR} -type f -name "${BACKUP_DIR}-*" -mtime +${BACKUP_DAY} -exec /bin/rm -f {} \;
+}
+
+function doBackup_file(){
+  return ;
+}
+
+function acqBackupFileName(){
+  # 获取备份文件名
+  echo ${BACKUP_DIR}-$(date +%Y%m%d-%R).zip
+}
+
+
+
+config ;
+doParam $@ ;
+doCheck ;
+doBackup ;
+doRollBackup ;

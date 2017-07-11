@@ -1,0 +1,44 @@
+#!/usr/bin/env /usr/local/php/bin/php
+<?php
+ini_set('memory_limit', '2048M'); //pdo抛异常后有內存泄露，超过10000次请求重启代理进程
+ini_set("display_errors", "On");
+set_error_handler('pdo_warning_function_handler'); //PDO连接断了只能报WARNING,需要特殊处理
+define(PID_PRE, "/var/run/con_pool_");
+$conf = "/etc/pool.ini"; //pool_server的配置文件
+
+if (empty($argv[1])) {
+    echo "Usage: pool_server {start|stop|restart}\n";
+    exit;
+}
+
+$cmd = $argv[1];
+if (($conf_arr = parse_ini_file($conf, true)) === false)//for stop && reload && test ini
+    die("bad ini file\n");
+
+
+switch ($cmd) {
+    case "start":
+        pool_server_create($conf);
+        break;
+    case "reload":
+        foreach ($conf_arr as $k => $value) {
+            pool_server_reload((int) file_get_contents(PID_PRE . $k . ".pid"));
+        }
+        echo "Tips: The reload can only modify 'pool_min','pool_max','recycle_num' and 'idel_time'\n";
+        die;
+        break;
+    case "stop":
+        foreach ($conf_arr as $k => $value) {
+            pool_server_shutdown((int) file_get_contents(PID_PRE . $k . ".pid"));
+        }
+        break;
+    case "restart":
+        foreach ($conf_arr as $k => $value) {
+            pool_server_shutdown((int) file_get_contents(PID_PRE . $k . ".pid"));
+        }
+        sleep(1);
+        pool_server_create($conf);
+        break;
+    default:
+        break;
+}

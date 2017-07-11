@@ -1,0 +1,94 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  cut nginx log
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+# 0点开始分割日志
+# 0 0 * * * /usr/local/prometheus/bin/cut_nginx_log
+# 脚本会读取nginx.conf并自动分割日志
+
+function config(){
+  # nginx.conf path
+  NGINX_CONF_FILE="/data/www/conf/nginx.conf"
+  # vhost conf path
+  NGINX_CONF_PATH="/data/www/conf/vhost"
+  # 默认保留7天 如果要自定义请配置 prometheus.conf
+  RETENTION_LOG_DAY=7
+
+  #TIME_YEAR=$(date -d "yesterday" +"%Y")
+  #TIME_MONTH=$(date -d "yesterday" +"%m")
+  DATE_FORMAT=$(date -d "yesterday" +"%Y-%m-%d")
+
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi
+
+  # 加载PROMETHEUS配置
+  loadConf prometheus.conf ;
+}
+
+function doCutLogs(){
+  doCutLogs_ ${NGINX_CONF_FILE} ;
+  [ ! -d ${NGINX_CONF_PATH} ] && exit 0 ;
+  # check vhost配置文件是否存在
+  ls ${NGINX_CONF_PATH}/vhost_*.conf >/dev/null 2>&1
+  checkError
+
+  local nginxVhostConfFile
+  IFS=$' \t\n'
+  for nginxVhostConfFile in `ls ${NGINX_CONF_PATH}/vhost_*.conf` ; do
+      doCutLogs_ ${nginxVhostConfFile} ;
+  done  
+}
+
+function doCutLogs_(){
+  local confFile=$1
+  if [ ! -f ${confFile} ] ; then
+  	  echoPlus 31 "nginx conf file : ${confFile} not found !" ;
+      return ;
+  fi
+  IFS=$'\n'
+  local logPath
+  for logPath in `grep 'access_log' ${confFile} | awk -F'[ |\t]+' '{print $3}'` ; do
+      if [ ".${logPath}" == ".off" ] || [ ".${logPath}" == ".off;" ] ; then
+      	  continue ;
+      fi	 
+      echoPlus 32 "nginx access log path : ${logPath}" ;
+      doCutLogs__ ${logPath} ;
+      # 删除日志
+      delLogs ${logPath} ;
+  done   
+}
+
+function doCutLogs__(){
+  local logPath=$1
+  local logName=`basename ${logPath}`
+  local logDir=`dirname ${logPath}`
+  mv ${logPath} ${logPath}.${DATE_FORMAT}.log >/dev/null 2>&1
+}
+
+function delLogs(){
+  local logPath=$1
+  logPath=`dirname ${logPath}`
+  find ${logPath} -mtime +${RETENTION_LOG_DAY} -type f -name *access-log.*.log -exec rm -f {} \;
+  find ${logPath} -mtime +${RETENTION_LOG_DAY} -type f -name *access.log.*.log -exec rm -f {} \;
+}
+
+
+function reloadNginx(){
+  service nginx cut ;
+}
+
+
+config ;
+doCutLogs ;
+reloadNginx ;

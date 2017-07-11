@@ -1,0 +1,214 @@
+#!/bin/bash
+
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  EZ tomcat System Config
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#   2015-03
+#===============================================================================
+
+
+function config(){
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi   
+
+  # 加载PROMETHEUS配置
+  loadConf_sysconfig ;
+
+  SYS_SERVICE_CNT=$(( ${#SYS_SERVICE_OPT[*]} / 2 ))
+  SYS_CONFIG_KEY_VALUE_CNT=$(( ${#SYS_CONFIG_KEY_VALUE_OPT[*]} / 3 ))
+  SYS_CONFIG_LINE_CNT=$(( ${#SYS_CONFIG_LINE_OPT[*]} / 2 ))
+}
+
+function loadConf_sysconfig(){
+  # 载入配置
+  test ".${SYSCONFIG_CONF}" = . && SYSCONFIG_CONF="http://res.51xianqu.net/software/PROMETHEUS/etc/sysconfig.conf"
+  loadUrlResFile ${SYSCONFIG_CONF} ;
+}
+
+function welcome(){
+cat << EOF > /etc/motd
+        ##     ##     #!  #&####  $#        ## ####   ##o   ##*   ###       ###   #&####                  
+         ##   ####   ##   #       $#      ##         ##       ##  ##$#     ####   #&                  
+          #   #  #   #    #####&  $#      #$        ;#        ##  ## ##   ## ##   ######              
+          ## ##  ## ##    #       $#      ##         #        ##  ##  ## o#  ##   #&                  
+           # #    #;#     #       $#       ##        ##      ##   ##   #o#   ##   #&                  
+           ##!    o##     ######  $######   !######    ######     ##    #    ##   ######*   
+EOF
+}
+
+function getConfig(){ 
+  # 从配置文件中读取配置项的值
+  # @param config file  (/etc/sysctl.conf)
+  # @param config key   (net.ipv4.tcp_syncookies)
+  # return value
+  local file=$1
+  local key=$2
+  local value=`cat ${file} | grep "${key}" | grep -v ^# | awk -F= '{print $NF}'| grep -o "[^ ]\+\( \+[^ ]\+\)*"`
+  echo ${value}
+}
+
+function setConfig(){
+  # 修改配置文件中配置项的值
+  # @param config file  (/etc/sysctl.conf)
+  # @param config key   (net.ipv4.tcp_syncookies)
+  # @param config value (1)
+  local file=$1
+  local key=$2
+  local value=$3
+
+  if [ ".`cat ${file} | grep ${key}`" == "." ] ; then
+     echo "${key} = ${value}" >> ${file}
+  else
+     local line=`cat ${file} | grep "${key}" | grep -v ^#`
+     sed -i "s#${line}#${key}\ =\ ${value}#g" ${file}
+  fi
+}
+
+function setConfigLine(){
+  # 修改配置文件中配置项(非附值型)
+  # @param config file  (/etc/sysctl.conf)
+  # @param config key   (net.ipv4.tcp_syncookies)
+  local file=$1
+  local key=$2
+  if [ ! -f {file} ] ; then
+     mkdir -p `dirname ${file}`
+     touch ${file}   
+  fi 
+  if [ "`cat ${file} | grep -c ${key}`" == "0" ] ; then
+     echoPlus 93 "[config] : ${file} ${key}"
+     if [ "${file}" == "/var/spool/cron/root" ] ; then
+        eval echo "${key}" >> ${file}
+     else 
+        echo "${key}" >> ${file}
+     fi  
+  else
+    # 值相同
+    echoPlus 92 "[check ok] : ${file} ${key}"   
+  fi
+}
+
+function acqSysConfigKeyValue(){
+  # 提取 SYS_CONFIG_KEY_VALUE_OPT中的key或value   '/etc/sysctl.conf' 'net.ipv4.tcp_syncookies' '1'
+  # @param file|key|value
+  # @param index
+  # return file or key or value
+  local getType=$1
+  local index=$2
+	IFS=$'\n\t'
+  #for value in ${SYS_CONFIG_KEY_VALUE_OPT[*]} ; do
+  case "${getType}" in
+       file)
+          index=$(( ${index} * 3 )) ;;
+       key)  
+          index=$(( ${index} * 3 + 1 )) ;;
+       value)
+          index=$(( ${index} * 3 + 2 )) ;;
+  esac
+  echo ${SYS_CONFIG_KEY_VALUE_OPT[${index}]}
+}
+
+function acqConfigLine(){
+  # 提取 SYS_CONFIG_LINE_OPT 
+  # @Param file|line
+  # @Param index
+  # return file or line
+  local getType=$1
+  local index=$2
+  IFS=$'\n\t'
+  case "${getType}" in
+       file)
+          index=$(( ${index} * 2 )) ;;
+       line)
+          index=$(( ${index} * 2 + 1 )) ;;
+  esac
+  echo ${SYS_CONFIG_LINE_OPT[${index}]}
+}
+
+function doSysConfig(){
+  # 系统配置开始配置
+  local i
+  for((i=0;i<${SYS_CONFIG_KEY_VALUE_CNT};i++));do
+ 	  local sckvFile=`acqSysConfigKeyValue file $i`
+    local sckvKey=`acqSysConfigKeyValue key $i`
+    local sckvValue=`acqSysConfigKeyValue value $i`
+    local getKey=`getConfig ${sckvFile} ${sckvKey}`
+    if [ ".${getKey}" != ".${sckvValue}" ] ; then
+       # 值不同则设置
+       echo ${getKey}
+       echo ${sckvValue}
+       echoPlus 93 "[config] : ${sckvFile} ${sckvKey} ${getKey}/${sckvValue}"
+       setConfig ${sckvFile} ${sckvKey} ${sckvValue} ;
+    else
+       # 值相同
+       echoPlus 92 "[check ok] : ${sckvFile} ${sckvKey} ${getKey}/${sckvValue}"   
+    fi
+  done
+
+  for((i=0;i<${SYS_CONFIG_LINE_CNT};i++));do
+     local sclFile=`acqConfigLine file $i`
+     local sclKey=`acqConfigLine line $i`
+     setConfigLine ${sclFile} ${sclKey} ;
+  done
+}
+
+function acqService(){
+  # 提取 SYS_SERVICE_OPT 
+  # @Param service | active
+  # @Param index
+  # return service or on|off
+  local getType=$1
+  local index=$2
+  IFS=$'\n\t'
+  case "${getType}" in
+       service)
+          index=$(( ${index} * 2 )) ;;
+       active)
+          index=$(( ${index} * 2 + 1 )) ;;
+  esac
+  echo ${SYS_SERVICE_OPT[${index}]}
+}
+
+function doServiceConfig(){
+  #SYS_SERVICE_CNT
+  for((i=0;i<${SYS_SERVICE_CNT};i++));do
+     local service=`acqService service $i`
+     local active=`acqService active $i`
+     if [ ! -x "/etc/init.d/{service}" ] ; then
+        echoPlus 31 "${service} not found !"
+        continue ;
+     fi
+     chkconfig ${service} ${active} ;
+     case "${active}" in
+          on)
+             echoPlus 92 "[config] : chkconfig ${service} on"
+             chkconfig ${service} on >/dev/null 2>&1 ;;
+          off)
+             echoPlus 93 "[config] : ${service} off"
+             chkconfig ${service} off >/dev/null 2>&1 ;;
+     esac
+  done
+}
+
+#代码开始
+
+# 读取全局配置项
+config ;
+# 检查执行用户是否为root
+checkRoot ;
+# 优化系统配置项
+doSysConfig ;
+# 服务优化
+doServiceConfig ;
+# 配置欢迎界面
+# welcome ;
+

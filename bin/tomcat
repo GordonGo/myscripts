@@ -1,0 +1,140 @@
+#!/bin/bash
+
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  tomcat service manager
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+
+
+# chkconfig:   - 85 15
+
+function config(){
+  # on service
+  . /etc/profile
+
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi      
+
+  # 加载PROMETHEUS配置
+  loadConf prometheus.conf ;
+
+  # 加载TOMCAT配置
+  loadConf tomcat_setenv.conf ;
+}
+
+function doParam(){
+  # 检查参数是否合法
+  if [ $# == 0 ] ; then
+     tomcatServiceInfo ;
+     return ;
+  fi
+
+  if [ $# == 1 ] ; then
+     case "$1" in
+          -i|-info|info)
+              tomcatInfo
+              exit 0 ;;
+          -V|-jvm|jvm)
+              tomcat_jvm 
+              exit 0 ;;
+          -h|-help|help)
+              prometheus_help $(basename $0) 
+              exit 0 ;;    
+          *)
+              tomcatServiceControlAll $@  ;
+              tomcatServiceInfo ;;
+     esac
+     return ;
+  fi        
+
+  if [ $# == 2 ] ; then
+     if [ ".$1" == ".all" ] ; then
+        tomcatServiceControlAll $2 ;
+     else
+        tomcatServiceControlOne $@ ;
+     fi
+     tomcatServiceInfo ;
+  fi      
+}
+
+function tomcatServiceInfo(){
+  # 输出服务信息
+  # 配置http协议检查项目;关闭请输入- (NOT EXAMINING)
+  # VmSize(KB):虚拟内存大小。整个进程使用虚拟内存大小，是VmLib, VmExe, VmData, 和 VmStk的总和。
+  # VmRSS(KB):虚拟内存驻留集合大小。这是驻留在物理内存的一部分。它没有交换到硬盘。它包括代码，数据和栈。
+  # VmData(KB):程序数据段的大小（所占虚拟内存的大小），堆使用的虚拟内存。
+  # VmStk(KB):任务在用户态的栈的大小，栈使用的虚拟内存
+  # VmExe(KB):程序所拥有的可执行虚拟内存的大小，代码段，不包括任务使用的库
+  # VmLib(KB):被映像到任务的虚拟内存空间的库的大小
+  echo $DIVIDING_LINE
+  #printf "\e[36m%-25s %-10s %-10s %-10s %-10s %-10s %-10s %-15s\e[0m\n" Port/ServiceName Working DaemonPid TomcatPid "VmSize(MB)" "VmRSS(MB)" Process HttpStatus
+  printf "%-25s %-10s %-10s %-10s %-10s %-10s %-10s %-15s \n" Port/ServiceName Working DaemonPid TomcatPid "VmSize(MB)" "VmRSS(MB)" Process HttpStatus
+  echo $DIVIDING_LINE
+  local tomcatAppName
+  for tomcatAppName in ${TOMCAT_APP_NAME_OPT[*]} ; do
+      local tomcatHttpPort=`acqTomcatHttpPort ${tomcatAppName}`
+      local httpStatus=`acqHttpStatus ${tomcatAppName}`
+      local tDaemon=`acqTomcatDaemonPid ${tomcatAppName}` 
+      [ ".${tDaemon}" == "." ] && tDaemon="-"
+      local tPid=`acqTomcatPid ${tomcatAppName}` 
+      if [ -n "${tPid}" ] && [ -f "/proc/${tPid}/status" ] ;then
+         local vmSize=`acqVmSize ${tPid}`
+         local vmRSS=`acqVmRSS ${tPid}`
+         local process=`acqProcess ${tPid}`
+      else
+         tPid="-"
+         local vmSize="-"
+         local vmRSS="-"
+         local process="-"
+      fi
+      local appDisable=`grep -c "(disable)" <<< ${tomcatAppName}`
+      local httpOk
+      if [ "${httpStatus}" = "-" ]; then
+         httpOk='-'
+      else
+         if [  ".${tDaemon}" == ".-" ] && [  ".${tPid}" == ".-" ] ; then
+            httpOk=2
+         else
+            httpOk=`tomcatServiceStatus ${tomcatAppName}`
+         fi
+      fi
+  
+      if [ "${appDisable}" == "1" ];then
+         local tomcatAppName=`acqTomcatAppNameExclusiveDisable ${tomcatAppName}`
+         #printf "\e[35m%-25s\e[0m \e[95m%-10s\e[0m %-10s %-10s %-10s %-10s %-10s %-10s\n" ${tomcatHttpPort}/${tomcatAppName} disable - - - - - -
+         printf "%-25s %-10s %-10s %-10s %-10s %-10s %-10s %-10s\n" ${tomcatHttpPort}/${tomcatAppName} disable - - - - - -
+      else
+         # @param color  (31|91 红  32|92绿  33|93黄 34|94蓝 35|95紫 36|96天蓝)
+         case "${httpOk}" in
+              # 0:check失败   1:check成功   2:服务关闭   -:未配置
+              0) #printf "\e[33;5m%-25s\e[0m \e[32m%-10s\e[0m %-10s %-10s %-10s %-10s %-10s\e[31;5m FAILURE \e[0m\n" ${tomcatHttpPort}/${tomcatAppName} enable ${tDaemon} ${tPid} ${vmSize} ${vmRSS} ${process}
+                 printf "%-25s %-10s %-10s %-10s %-10s %-10s %-10s FAILURE \n" ${tomcatHttpPort}/${tomcatAppName} enable ${tDaemon} ${tPid} ${vmSize} ${vmRSS} ${process}
+                 ;;
+              1) #printf "\e[32m%-25s\e[0m \e[32m%-10s\e[0m %-10s %-10s %-10s %-10s %-10s\e[32m OK \e[0m\n" ${tomcatHttpPort}/${tomcatAppName} enable ${tDaemon} ${tPid} ${vmSize} ${vmRSS} ${process}
+                 printf "%-25s %-10s %-10s %-10s %-10s %-10s %-10s OK \n" ${tomcatHttpPort}/${tomcatAppName} enable ${tDaemon} ${tPid} ${vmSize} ${vmRSS} ${process}
+                 ;;
+              2) #printf "\e[32m%-25s\e[0m \e[32m%-10s\e[0m %-10s %-10s %-10s %-10s %-10s\e[32m STOP \e[0m\n" ${tomcatHttpPort}/${tomcatAppName} enable ${tDaemon} ${tPid} ${vmSize} ${vmRSS} ${process}
+                 printf "%-25s %-10s %-10s %-10s %-10s %-10s %-10s STOP \n" ${tomcatHttpPort}/${tomcatAppName} enable ${tDaemon} ${tPid} ${vmSize} ${vmRSS} ${process}
+                 ;;   
+              "-") #printf "%-25s \e[32m%-10s\e[0m %-10s %-10s %-10s %-10s %-10s\e[36m NoConfiguration \e[0m\n" ${tomcatHttpPort}/${tomcatAppName} enable ${tDaemon} ${tPid} ${vmSize} ${vmRSS} ${process}
+                 printf "%-25s %-10s %-10s %-10s %-10s %-10s %-10s NoConfiguration \n" ${tomcatHttpPort}/${tomcatAppName} enable ${tDaemon} ${tPid} ${vmSize} ${vmRSS} ${process}
+                 ;;      
+         esac
+      fi
+  done
+  echo $DIVIDING_LINE
+}
+
+config ;
+doParam $@ ;
+exit 0 ;

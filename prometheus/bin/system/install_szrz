@@ -1,0 +1,13 @@
+#!/bin/bash
+
+
+yum install -y gcc*
+mkdir -p /data/www/software
+cd /data/www/software
+wget http://res.51xianqu.net/software/tools/rzsz-3.48.tar.gz
+#wget http://freeware.sgi.com/source/rzsz/rzsz-3.48.tar.gz
+tar zxvf  rzsz-3.48.tar.gz
+cd src 
+sed -i "s#OFLAG= -O#OFLAG= -O -DREGISTERED#" ./Makefile
+make posix
+cp rz sz  /usr/bin

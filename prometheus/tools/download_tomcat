@@ -1,0 +1,80 @@
+#!/bin/bash
+
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  tomcat service manager
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+
+
+# chkconfig:   - 85 15
+
+function config(){
+   TOMCAT_DOWNLOAD_URL='http://mirrors.cnnic.cn/apache/tomcat'
+   TOMCAT_LOCAL_PATH='/data/www/ROOT/static/software/tomcat'
+   TOMCAT_VERSION=
+
+   #http://mirrors.cnnic.cn/apache/tomcat/tomcat-8/v8.0.23/bin/apache-tomcat-8.0.23.zip
+   #http://mirrors.cnnic.cn/apache/tomcat/tomcat-8/v8.0.23/bin/extras/catalina-jmx-remote.jar
+   #http://mirrors.cnnic.cn/apache/tomcat/tomcat-8/v8.0.23/bin/extras/catalina-ws.jar
+   #http://mirrors.cnnic.cn/apache/tomcat/tomcat-8/v8.0.23/bin/extras/tomcat-juli-adapters.jar
+   #http://mirrors.cnnic.cn/apache/tomcat/tomcat-8/v8.0.23/bin/extras/tomcat-juli.jar
+}
+
+function doParam(){
+  if [ $# == 1 ] ; then
+     TOMCAT_VERSION=$1
+     return ;
+  fi        
+  exit 1 ;
+    
+}
+
+function doDownload(){
+  local version1=`echo ${TOMCAT_VERSION} | awk -F. '{print $1}'`
+  local version2=`echo ${TOMCAT_VERSION} | awk -F. '{print $2}'`
+  local version3=`echo ${TOMCAT_VERSION} | awk -F. '{print $3}'`
+  mkdir -p ${TOMCAT_LOCAL_PATH}/tomcat-${version1}/v${TOMCAT_VERSION}/bin/extras
+  cd ${TOMCAT_LOCAL_PATH}/tomcat-${version1}/v${TOMCAT_VERSION}/bin
+  wget -nc ${TOMCAT_DOWNLOAD_URL}/tomcat-${version1}/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.zip
+  cd ${TOMCAT_LOCAL_PATH}/tomcat-${version1}/v${TOMCAT_VERSION}/bin/extras
+  wget -nc ${TOMCAT_DOWNLOAD_URL}/tomcat-${version1}/v${TOMCAT_VERSION}/bin/extras/catalina-jmx-remote.jar
+  wget -nc ${TOMCAT_DOWNLOAD_URL}/tomcat-${version1}/v${TOMCAT_VERSION}/bin/extras/catalina-ws.jar
+  wget -nc ${TOMCAT_DOWNLOAD_URL}/tomcat-${version1}/v${TOMCAT_VERSION}/bin/extras/tomcat-juli-adapters.jar
+  wget -nc ${TOMCAT_DOWNLOAD_URL}/tomcat-${version1}/v${TOMCAT_VERSION}/bin/extras/tomcat-juli.jar
+}
+
+function acqFileMd5code(){
+  local file=$1
+  local md5code
+  md5code=`md5sum $file | awk '{print $1}'`
+  echo $md5code
+}
+
+
+function show(){
+  local version1=`echo ${TOMCAT_VERSION} | awk -F. '{print $1}'`
+  local version2=`echo ${TOMCAT_VERSION} | awk -F. '{print $2}'`
+  local version3=`echo ${TOMCAT_VERSION} | awk -F. '{print $3}'`
+echo "tomcat v${TOMCAT_VERSION}"
+echo "TOMCAT_PKG_${version1}${version2}${version3}=\${RES_SERVER}'/software/tomcat/tomcat-${version1}/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.zip'"
+echo "TOMCAT_PKG_MD5_${version1}${version2}${version3}=`acqFileMd5code ${TOMCAT_LOCAL_PATH}/tomcat-${version1}/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.zip`"
+echo "TOMCAT_JMX_REMOTE_${version1}${version2}${version3}=\${RES_SERVER}'/software/tomcat/tomcat-${version1}/v${TOMCAT_VERSION}/bin/extras/catalina-jmx-remote.jar'"
+echo "TOMCAT_JMX_REMOTE_MD5_${version1}${version2}${version3}=`acqFileMd5code ${TOMCAT_LOCAL_PATH}/tomcat-${version1}/v${TOMCAT_VERSION}/bin/extras/catalina-jmx-remote.jar`"
+echo "TOMCAT_JULI_ADAPTERS_${version1}${version2}${version3}=\${RES_SERVER}'/software/tomcat/tomcat-${version1}/v${TOMCAT_VERSION}/bin/extras/tomcat-juli-adapters.jar'"
+echo "TOMCAT_JULI_ADAPTERS_MD5_${version1}${version2}${version3}=`acqFileMd5code ${TOMCAT_LOCAL_PATH}/tomcat-${version1}/v${TOMCAT_VERSION}/bin/extras/tomcat-juli-adapters.jar`"
+echo "TOMCAT_JULI_${version1}${version2}${version3}=\${RES_SERVER}'/software/tomcat/tomcat-${version1}/v${TOMCAT_VERSION}/bin/extras/tomcat-juli.jar'"
+echo "TOMCAT_JULI_MD5_${version1}${version2}${version3}=`acqFileMd5code ${TOMCAT_LOCAL_PATH}/tomcat-${version1}/v${TOMCAT_VERSION}/bin/extras/tomcat-juli.jar`"
+}
+
+config ;
+doParam $@ ;
+doDownload ;
+show
+exit 0 ;
+
+
+
+
+

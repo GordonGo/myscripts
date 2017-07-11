@@ -1,0 +1,263 @@
+#!/bin/bash
+
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  ssh server
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+
+
+function config(){
+  #-------配置项--------------------------
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi      
+
+  loadConf prometheus.conf ;
+  loadConf sshs.conf ;
+
+  SSHS_TMP_FILE="`head -1 /dev/urandom |md5sum | awk '{print $1}'`.sshs.tmp"
+
+  HOSTGROUP=
+  HOSTIP=
+
+  # 计算配置行
+  HOSTGROUP_OPT_CNT=$(( ${#HOSTGROUP_OPT[*]} / 3 ))  
+  HOST_OPT_CNT=$(( ${#HOST_OPT[*]} / 5 ))  
+}
+
+#----------通用
+function acq_hostgroup_value(){
+  local name=$1
+  local returnType=$2
+  local index=`acq_hostgroup_index_by_name ${name}`
+  local value=`acq_hostgroup_opt ${returnType} ${index}`
+  echo ${value}
+}
+
+function acq_hostgroup_index_by_name(){
+  local name=$1
+  local i
+  for((i=0;i<${HOSTGROUP_OPT_CNT};i++));do
+     if [ ${name} == `acq_hostgroup_opt name $i` ] ; then
+        echo $i ;
+        break ;
+     fi
+  done
+}
+
+function acq_hostgroup_opt(){
+  # 提取 JAVA_PROJECTS_OPT 中的矩阵数据
+  # @param project_name:host_group:environmental:properties
+  # @param index
+  # return file or key or value
+  local getType=$1
+  local index=$2
+  IFS=$'\n\t'
+  case "${getType}" in
+       name)
+          index=$(( ${index} * 3 ))     ;;
+       content)  
+          index=$(( ${index} * 3 + 1 )) ;;
+       color)
+          index=$(( ${index} * 3 + 2 )) ;;
+  esac
+  echo ${HOSTGROUP_OPT[${index}]}
+}
+
+function acq_host_value(){
+  local name=$1
+  local returnType=$2
+  local index=`acq_host_index_by_name ${name}`
+  local value=`acq_host_opt ${returnType} ${index}`
+  echo ${value}
+}
+
+function acq_host_index_by_name(){
+  local name=$1
+  local i
+  for((i=0;i<${HOST_OPT_CNT};i++));do
+     if [ ${name} == `acq_host_opt ip $i` ] ; then
+        echo $i ;
+        break ;
+     fi
+  done
+}
+
+function acq_host_opt(){
+  # 提取 JAVA_PROJECTS_OPT 中的矩阵数据
+  # @param project_name:host_group:environmental:properties
+  # @param index
+  # return file or key or value
+  local getType=$1
+  local index=$2
+  IFS=$'\n\t'
+  case "${getType}" in
+       ip)
+          index=$(( ${index} * 5 ))     ;;
+       hostname)  
+          index=$(( ${index} * 5 + 1 )) ;;
+       hostgroup)
+          index=$(( ${index} * 5 + 2 )) ;;
+       environment)
+          index=$(( ${index} * 5 + 3 )) ;;
+       login)
+          index=$(( ${index} * 5 + 4 )) ;;
+  esac
+  echo ${HOST_OPT[${index}]}
+}
+
+#----------通用
+
+function print_format_hostgroup(){
+  # 增强显示
+  # @param index
+  # @param name
+  # @param content
+  # @param color
+  local index=$1
+  local name=$2
+  local content=$3
+  local color=$4
+  IFS=$'\n\t'
+  if [ $# == 0 ] ; then
+     printf "\e[32m%-15s %-25s %-25s\e[0m\n" INDEX NAME CONTENT
+  else
+     printf "%-15s \e[${color}m%-25s\e[0m %-25s\n" $index $name $content
+  fi
+}
+
+function echo_hostgroup(){
+  local i name content color index
+  echo $DIVIDING_LINE
+  print_format_hostgroup
+  echo $DIVIDING_LINE
+  for((i=0;i<${HOSTGROUP_OPT_CNT};i++)) ;do
+     name=${HOSTGROUP_OPT[$(( $i * 3 ))]}
+     content=`acq_hostgroup_value $name content`
+     color=`acq_hostgroup_value $name color`
+     index=$(( $i + 1 ))
+     print_format_hostgroup ${index} ${name} ${content} ${color} ;
+  done
+  echo $DIVIDING_LINE
+}
+
+function select_hostgroup(){
+  echo_hostgroup ;
+  local quick max name
+  read -p "please select: " quick
+  if [ "${quick}" -ge "1" ] && [ "${quick}" -le "${HOSTGROUP_OPT_CNT}" ];then
+     name=${HOSTGROUP_OPT[$(( ( ${quick} - 1 ) * 3 ))]}
+     echo -e "You select hostgroup : \e[32m$name\e[0m"
+     HOSTGROUP=${name}
+  else
+     echo "The wrong choice, exit the program!" && exit 1;
+  fi
+}
+
+function echo_host(){
+  local i index ip hostname hostgroup environment login
+  echo $DIVIDING_LINE
+  print_format_host ;
+  echo $DIVIDING_LINE
+  #[ -f "/data/www/temp/sshs.tmp" ] && rm -f /data/www/temp/${SSHS_TMP_FILE}
+  for((i=0;i<${HOST_OPT_CNT};i++)) ;do
+     ip=${HOST_OPT[$(( $i * 5 ))]}
+     hostgroup=`acq_host_value $ip hostgroup`
+     if [[ "${hostgroup}" == "${HOSTGROUP}" ]] ; then
+        index=$(( $index + 1 ))
+        environment=`acq_host_value $ip environment`
+        hostname=`acq_host_value $ip hostname`
+        print_format_host $index $ip $environment $hostname
+        echo "$ip" >> /data/www/temp/${SSHS_TMP_FILE}
+     fi
+  done
+  echo $DIVIDING_LINE
+}
+
+function print_format_host(){
+  # 增强显示
+  local index=$1
+  local ip=$2
+  local environment=$3
+  local hostname=$4
+  local color
+  IFS=$'\n\t'
+  if [ $# == 0 ] ; then
+     printf "\e[32m%-5s %-25s %-25s %-50s\e[0m\n" INDEX IP ENVIRONMENT HOSTNAME/CONTENT
+  else
+     case "${environment}" in
+          production) color=31 ;;
+          gray) color=33 ;;
+          daily) color=32 ;;
+          *) color=0 ;;
+     esac
+     printf "%-5s %-25s \e[${color}m%-25s\e[0m %-50s\n" $index $ip $environment $hostname
+  fi
+}
+# ip          hostname     group        event          login
+
+function select_host(){
+  echo_host ;
+  local quick max
+  max=`cat /data/www/temp/${SSHS_TMP_FILE} | wc -l`
+  read -p "please select: " quick
+  if [ "${quick}" -ge "1" ] && [ "${quick}" -le "${max}" ];then
+     HOSTIP=`sed -n ${quick}p /data/www/temp/${SSHS_TMP_FILE}`
+     [ -f "/data/www/temp/${SSHS_TMP_FILE}" ] && rm -f /data/www/temp/${SSHS_TMP_FILE}
+     echo -e "You select host_ip : \e[32m$HOSTIP\e[0m"
+  else
+     echo "The wrong choice, exit the program!" && exit 1;
+  fi
+}
+
+function ssh_host(){
+  local login=`acq_host_value $HOSTIP login`
+  local login_type=`awk -F: '{print $1}' <<< $login`
+  local value=`awk -F: '{print $NF}' <<< $login`
+  case "${login_type}" in
+          KEY) 
+             ssh_host_key $HOSTIP ;;
+          PASSWD) 
+             [ ".${value}" == "." ] && exit 1
+             ssh_host_passwd $HOSTIP $value;;
+  esac
+}
+
+function ssh_host_passwd(){
+  local ip=$1
+  local passwd=$2
+  sshpass -p ${passwd} ssh -o StrictHostKeyChecking=no -o GSSAPIAuthentication=no root@$1
+}
+
+function ssh_host_key(){
+  local ip=$1
+  ssh -o StrictHostKeyChecking=no -o GSSAPIAuthentication=no xqadmin@$1
+}
+
+    
+
+config ;
+select_hostgroup ;
+select_host ;
+ssh_host
+
+
+
+
+
+
+
+
+
+
+
+

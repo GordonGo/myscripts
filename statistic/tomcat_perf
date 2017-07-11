@@ -1,0 +1,49 @@
+#!/bin/bash
+
+function config(){
+
+  ZABBIX_KEY="Tomcat.Perf.Failed"
+
+  SERVER_NAME="-"
+
+  DEBUG_FILE_NAME=$(basename $0).log
+  # 加载函数
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi      
+
+  # 加载tomcat_setenv.conf配置
+  loadConf tomcat_setenv.conf ;
+
+  TOMCAT_APP_NAME=$TOMCAT_APP_NAME_OPT[0]
+
+  TOMCAT_HTTP_PORT=`acqTomcatHttpPort ${TOMCAT_APP_NAME}`
+
+  APP_PERF_FILE="/data/www/logs/apps/${TOMCAT_HTTP_PORT}-${TOMCAT_APP_NAME}/app/${TOMCAT_APP_NAME}-perf.log"
+
+}
+
+function acqTimestamp(){
+  local timestamp=$(date +%s)
+  echo ${timestamp} 
+}
+
+
+function acqValue(){
+  local value=`tail -1 ${APP_PERF_FILE} | awk -F: '{print $NF}' | tr -d ')]'`
+  echo ${value}
+}
+
+function doStatistic(){
+  local zabbix_value=`acqValue`
+  if [ -n "${zabbix_value}" ] ; then
+     #echo "${SERVER_NAME} ${ZABBIX_KEY} `acqTimestamp` ${zabbix_value}"
+     echo "${SERVER_NAME} ${ZABBIX_KEY} `acqTimestamp` ${zabbix_value}" | /usr/local/zabbix/bin/zabbix_sender -T -vv -c /usr/local/zabbix/etc/zabbix_agentd.conf -i-
+  fi
+}
+
+config ;
+doStatistic ;

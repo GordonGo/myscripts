@@ -1,0 +1,293 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  interface_ci
+#   AUTHOR: Gordon
+#   DATE: 2016-09-28
+#   VER: 1.0.1
+#===============================================================================
+#   参数说明
+#   -project.name      项目名称
+#   -environmental     环境名称
+#   -hostgroup         机器组名
+#   -ci.type           持续集成类型(java|php|tomcat)
+#
+#   命令模式部署
+#   /usr/local/prometheus/interface/interface_ci -project.name=trade -environmental=production -hostgroup=trade-production -ci.type=java
+
+
+function config(){
+  #-------配置项--------------------------
+  VER=1.0.1
+  
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  # 主机组名称
+  HOST_GROUP=
+
+  # 项目名，若缺省则使用${HOST_GROUP}
+  PROJECT_NAME=
+
+  # 环境名称
+  # value=daily:gray:production
+  ENVIRONMENTEL=
+
+  # 并发线程数
+  ANSIBLE_FORKS=1
+
+  # 部署完成后是否显示tomcat服务
+  DEPLOY_COMPLETE_TOMCAT_SERVICE_DISPLAY=true
+
+  # 集成类型
+  # value=java:php
+  # default=java
+  CI_TYPE=java
+  
+  ANSIBLE_BIN=/usr/bin/ansible
+
+  CI_CMD_NAME="`head -1 /dev/urandom |md5sum | awk '{print $1}'`.sh"
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi      
+
+  # 加载持续集成接口配置
+  loadConf interface_ci.conf ;
+
+  # 计算配置行
+  JAVA_PROJECTS_OPT_CNT=$(( ${#JAVA_PROJECTS_OPT[*]} / 4 ))  
+}
+
+#----------通用
+function acq_java_project_value(){
+  local name=$1
+  local returnType=$2
+  local index=`acq_java_project_index_by_name ${name}`
+  local value=`acq_java_projects_opt ${returnType} ${index}`
+  echo ${value}
+}
+
+function acq_java_project_index_by_name(){
+  local name=$1
+  local i
+  for((i=0;i<${JAVA_PROJECTS_OPT_CNT};i++));do
+     if [ ${name} == `acq_java_projects_opt name $i` ] ; then
+        echo $i ;
+        break ;
+     fi
+  done
+}
+
+function acq_java_projects_opt(){
+  # 提取 JAVA_PROJECTS_OPT 中的矩阵数据
+  # @param project_name:host_group:environmental:properties
+  # @param index
+  # return file or key or value
+  local getType=$1
+  local index=$2
+  IFS=$'\n\t'
+  case "${getType}" in
+       name)
+          index=$(( ${index} * 4 ))     ;;
+       host_group)  
+          index=$(( ${index} * 4 + 1 )) ;;
+       environmental)
+          index=$(( ${index} * 4 + 2 )) ;;
+       properties)
+          index=$(( ${index} * 4 + 3 )) ;;
+  esac
+  echo ${JAVA_PROJECTS_OPT[${index}]}
+}
+
+#----------通用
+
+function doParam(){
+  # 处理参数
+  local param=
+  [ $# == 0 ] && return ;
+  for param in "$@" ; do
+      local paramName=`echo ${param} | awk -F'=' '{print $1}'`
+      local paramValue=`echo ${param} | awk -F'=' '{print $NF}'`
+      case "${paramName}" in
+          -hostgroup|-hg)
+              HOST_GROUP=${paramValue} ;;
+          -project.name|-pn)
+              PROJECT_NAME=${paramValue} ;;
+          -ci.type|-ct)
+              CI_TYPE=${paramValue} ;;
+          -environmental|-e)
+              ENVIRONMENTEL=${paramValue} ;;
+          -h|-help)
+              prometheus_help $(basename $0) 
+              exit 0 ;;    
+      esac
+  done
+}
+
+function deployment(){
+  eval deployment_${CI_TYPE}
+}
+
+
+function deployment_pkg(){
+  #deployment_pkg_rename ;
+  deployment_pkg_deployment_project ;
+  deployment_pkg_clean ;
+}
+
+function deployment_pkg_deployment_project(){
+  # 项目部署
+  # interface_ci -project.name=analyzer-backend -environmental=daily -hostgroup=analyzer-daily -ci.type=pkg
+  local ci_cmd="${ANSIBLE_BIN} ${HOST_GROUP} -sudo -f ${ANSIBLE_FORKS} -a \
+                 \"${PROMETHEUS_HOME}/bin/deployment_project_pkg \
+                 -project.name=${PROJECT_NAME} \
+                 -project.deployment.pkg.download.url=${CMDB_RES_SERVER}/${PROJECT_NAME}/${ENVIRONMENTEL}/pkg/${PROJECT_NAME}.zip\""
+  echo ${ci_cmd} > /data/www/temp/${CI_CMD_NAME}
+  echo "sleep 5" >> /data/www/temp/${CI_CMD_NAME}
+  /bin/bash /data/www/temp/${CI_CMD_NAME} && rm -f /data/www/temp/${CI_CMD_NAME} ;
+}
+
+
+function deployment_pkg_clean(){
+  rm -f /data/www/ROOT/static/deploy/${PROJECT_NAME}/${ENVIRONMENTEL}/pkg/*.zip
+}
+
+function deployment_java(){
+  deployment_java_rename_war_pkg ;
+  #deployment_java_tomcat_stop ;
+  deployment_java_deployment_project ;
+  #deployment_java_tomcat_start ;
+  deployment_java_rm_war_pkg ;
+}
+
+function deployment_java_rename_war_pkg(){
+  mv /data/www/ROOT/static/deploy/${PROJECT_NAME}/${ENVIRONMENTEL}/pkg/${PROJECT_NAME}-*.war /data/www/ROOT/static/deploy/${PROJECT_NAME}/${ENVIRONMENTEL}/pkg/${PROJECT_NAME}.war 2>/dev/null
+}
+
+function deployment_java_deployment_project() {
+  # 项目部署
+  # interface_ci -project.name=trade -environmental=production -hostgroup=trade-production -ci.type=java
+  local properties=`acq_java_project_value ${PROJECT_NAME} properties`
+  local ci_cmd="${ANSIBLE_BIN} ${HOST_GROUP} -sudo -f ${ANSIBLE_FORKS} -a \
+                 \"${PROMETHEUS_HOME}/bin/deployment_project \
+                 -tomcat.service.restart=true \
+                 -tomcat.app.name=${PROJECT_NAME} \
+                 -tomcat.project.deployment.pkg.download.url=${CMDB_RES_SERVER}/${PROJECT_NAME}/${ENVIRONMENTEL}/pkg/${PROJECT_NAME}.war"
+  # if [ ".${ENVIRONMENTEL}" == ".daily" ] || [ "${properties}" == "-" ] ; then
+  if [ "${properties}" == "-" ] ; then
+     ci_cmd="${ci_cmd}\""
+  else
+     ci_cmd="${ci_cmd} -tomcat.project.conf.download.url=${CMDB_RES_SERVER}/${PROJECT_NAME}/${ENVIRONMENTEL}/ \
+                 -tomcat.project.conf.download.name=${properties}\""
+  fi
+  echo "${ANSIBLE_BIN} ${HOST_GROUP} -sudo -a \"${PROMETHEUS_HOME}/bin/tomcat ${PROJECT_NAME} stop\"" >> /data/www/temp/${CI_CMD_NAME}
+  echo "sleep 2" >> /data/www/temp/${CI_CMD_NAME}
+  echo "${ANSIBLE_BIN} ${HOST_GROUP} -sudo -a \"${PROMETHEUS_HOME}/bin/tomcat ${PROJECT_NAME} kill\"" >> /data/www/temp/${CI_CMD_NAME}
+  echo ${ci_cmd} > /data/www/temp/${CI_CMD_NAME}
+  if [  ".${DEPLOY_COMPLETE_TOMCAT_SERVICE_DISPLAY}" == ".true" ]; then
+     echo "sleep 10" >> /data/www/temp/${CI_CMD_NAME}
+     echo "${ANSIBLE_BIN} ${HOST_GROUP} -sudo -a \"${PROMETHEUS_HOME}/bin/tomcat\"" >> /data/www/temp/${CI_CMD_NAME}
+  fi
+  /bin/bash /data/www/temp/${CI_CMD_NAME} && rm -f /data/www/temp/${CI_CMD_NAME} ;
+}
+
+function deployment_java_rm_war_pkg(){
+  rm -f /data/www/ROOT/static/deploy/${PROJECT_NAME}/${ENVIRONMENTEL}/pkg/*.war
+}
+
+function deployment_tomcat(){
+  # 升级tomcat版本
+  # interface_ci -project.name=trade -environmental=production -hostgroup=trade-production -ci.type=tomcat
+  local ci_cmd="${ANSIBLE_BIN} ${HOST_GROUP} -sudo -f ${ANSIBLE_FORKS} -a \
+                 \"${PROMETHEUS_HOME}/bin/install_tomcat \
+                 -tomcat.install.version=7 \
+                 -tomcat.install.name=all \
+                 -tomcat.service.start=true \
+                 -tomcat.setenv.file=${CMDB_RES_SERVER}/${PROJECT_NAME}/tomcat_setenv.conf\""
+  echo "${ANSIBLE_BIN} ${HOST_GROUP} -sudo -a \"${PROMETHEUS_HOME}/bin/tomcat stop\"" >> /data/www/temp/${CI_CMD_NAME}
+  echo ${ci_cmd} > /data/www/temp/${CI_CMD_NAME}
+  #echo "sleep 5" >> /data/www/temp/${CI_CMD_NAME}
+  echo "${ANSIBLE_BIN} ${HOST_GROUP} -sudo -a \"${PROMETHEUS_HOME}/bin/tomcat\"" >> /data/www/temp/${CI_CMD_NAME}
+  /bin/bash /data/www/temp/${CI_CMD_NAME} && rm -f /data/www/temp/${CI_CMD_NAME} ;
+  [ $? -ne 0 ] && deploy_failure ;
+}
+
+function doCheck(){
+  # 校验 PROJECT_NAME
+  test ".${PROJECT_NAME}" = . && echoPlus error "Not found project name !" && deploy_failure ;
+
+  # 校验 ENVIRONMENTEL
+  test ".${ENVIRONMENTEL}" = . && echoPlus error "Not found environmental daily:gray:production !" && deploy_failure ;
+  local environmental=`acq_java_project_value ${PROJECT_NAME} environmental`
+  local isFind=`echo ${environmental} | grep -c ${ENVIRONMENTEL}`
+  test ${isFind} = 0 && echoPlus error "Not found ${environmental} by ${ENVIRONMENTEL} !" && deploy_failure ;
+
+  # 校验 HOST_GROUP
+  test ".${HOST_GROUP}" = . && echoPlus error "Not found host group !" && deploy_failure ;
+  out_of_service ;
+}
+
+function deploy_failure(){
+  echoPlus error "Deploy Failure !!!"
+  print_log ERROR "PROJECT_NAME=${PROJECT_NAME}:ENVIRONMENTEL=${ENVIRONMENTEL}:HOST_GROUP=${HOST_GROUP}:MSG=DeployFailure" /data/www/logs/deploy/$(basename $0);
+  exit 1
+}
+
+function deploy_succeed(){
+  echoPlus info "Deploy Succeed !!!"
+  print_log INFO "PROJECT_NAME=${PROJECT_NAME}:ENVIRONMENTEL=${ENVIRONMENTEL}:HOST_GROUP=${HOST_GROUP}:MSG=DeploySucceed" /data/www/logs/deploy/$(basename $0);
+  exit 0
+}
+
+function out_of_service(){
+  IFS=$'\n\t'
+  local is_oos=`salc_oos_time ${OOS_START_TIME} ${OOS_END_TIME}`
+  test ".${is_oos}" == ".1" && return ;
+  oos_print ;
+}
+
+function oos_print(){
+  local oos_opt_msg
+  test ".${OOS_MSG}" == "." && OOS_MSG='发布暂停，管理员并未写明暂停的详细原因'
+  echoPlus error ${OOS_MSG} ;
+  case ${OOS_OPT} in
+    1) oos_opt_msg="强制关闭" ;;
+    2) oos_opt_msg="临时开启" ;;
+    3) oos_opt_msg="部分开启" ;;
+    *) oos_opt_msg="接口状态受时间限制是否开启" ;;
+  esac
+  echoPlus error "发布接口状态:${OOS_OPT}  ${oos_opt_msg}" ;
+  echoPlus error "开始关闭时间:"${OOS_START_TIME} ;
+  echoPlus error "结束关闭时间:"${OOS_END_TIME} ;
+  echoPlus error "                by:白衣" ;
+  deploy_failure ;
+}
+
+function salc_oos_time(){
+  # 返回 1 非维护期
+  # 返回 0 在维护期内
+  # @param oos start time
+  # @param oos end time
+  test ".$1" = . && echo 1 && return ;
+  test ".$2" = . && echo 1 && return ;
+  local nowTime=`date +%s`
+  local oosStartTime=`date -d "$1" +%s`
+  local oosEndTime=`date -d "$2" +%s`
+  test ${nowTime} -lt ${oosStartTime} && echo 1 && return ;
+  test ${nowTime} -gt ${oosEndTime} && echo 1 && return ;
+  echo 0 ;
+}
+
+
+config ;
+checkUser ;
+doParam $@ ;
+doCheck ;
+deployment ;
+deploy_succeed ;
+

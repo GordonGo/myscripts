@@ -1,0 +1,90 @@
+#!/bin/bash
+
+function config(){
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi      
+
+  # 加载PROMETHEUS配置
+  loadConf prometheus.conf ;
+  # 加载TOMCAT配置
+  loadConf tomcat_setenv.conf ;
+
+  SERVICE_CNT=$(( ${#SERVICE_OPT[*]} / 2 ))
+
+}
+
+function acqServiceOpt(){
+  # @param name|key
+  # @param index
+  # return name or key
+  local getType=$1
+  local index=$2
+  IFS=$'\n\t'
+  case "${getType}" in
+       name)
+          index=$(( ${index} * 2 )) ;;
+       key)
+          index=$(( ${index} * 2 + 1 )) ;;
+  esac
+  echo ${SERVICE_OPT[${index}]}
+}
+
+function acqChkconfigStatus(){
+  local serviceName=$1
+  local value=`chkconfig --list 2>/dev/null | grep "${serviceName}" | awk -F'[\t|:]' '{print $9}'` 
+  if [ ".${value}" == "." ] ; then
+     echo "Not installed"
+  else
+     echo ${value}
+  fi
+}
+
+function doMonitor(){
+  echo $DIVIDING_LINE
+  #printf "\e[36m%-25s %-15s %-15s %-15s\e[0m\n" ServiceName OnBoot Running Version
+  printf "%-25s %-15s %-15s %-15s \n" ServiceName OnBoot Running Version
+  echo $DIVIDING_LINE
+  local i
+  for((i=0;i<${SERVICE_CNT};i++));do
+     local name=`acqServiceOpt name $i`
+     local key=`acqServiceOpt key $i`
+     printfServiceStatus ${name} ${key} ;
+  done
+  echo $DIVIDING_LINE
+}
+
+function printfServiceStatus(){
+   local name=$1
+   local key=$2
+   local running=Yes
+   local runningColor=32
+   local cnt=`ps -ef | grep "${key}" | grep -v "grep" | wc -l`
+   local onBoot=`acqChkconfigStatus ${name}`
+   local onBootColor=31
+   local version=`acqVersion ${name}`
+   IFS=$'\n\t'
+   if [ "${cnt}" == "0" ] ; then
+      running=No
+      runningColor=31
+   fi
+   if [ "${onBoot}" == "on" ] ; then
+      onBootColor=32
+   fi
+   #printf "%-25s \e[${onBootColor}m%-15s\e[0m \e[${runningColor}m%-15s\e[0m %-40s\n" ${name} ${onBoot} ${running} ${version} ;
+   printf "%-25s %-15s %-15s %-40s\n" ${name} ${onBoot} ${running} ${version} ;
+}
+
+config ;
+doMonitor ;
+
+#acqServiceVersion nginx
+#acqServiceVersion redis
+exit 0 ;

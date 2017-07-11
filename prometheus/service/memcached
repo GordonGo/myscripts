@@ -1,0 +1,90 @@
+#! /bin/bash
+#   
+# memcached:    MemCached Daemon   
+#   
+# chkconfig:    - 90 25  
+# description:  MemCached Daemon   
+#   
+### BEGIN INIT INFO
+# Provides:          memcached
+# Required-Start:    $syslog
+# Required-Stop:     $syslog
+# Should-Start:        $local_fs
+# Should-Stop:        $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description:    memcached - Memory caching daemon
+# Description:        memcached - Memory caching daemon
+### END INIT INFO
+
+PORT=11211
+USER=memcache
+# 最大链接数,默认1024
+MAXCONN=1024
+# 最大内存使用,单位MB;默认64MB
+# 留空将自动计算内存值;物理内存－512MB
+CACHESIZE=
+OPTIONS=""
+memcached_location=/usr/local/memcached
+
+RETVAL=0
+prog="memcached"
+
+
+# 留空将自动计算内存值;物理内存－512MB
+if [ ".${CACHESIZE}" == "." ] ; then
+   mem_size=`free -m | grep "^Mem:" | awk '{print $2}'`
+   CACHESIZE=$(( ${mem_size} - 512 ))
+fi
+
+start () {
+    echo -n $"Starting $prog: "
+    if [ ! -f "/var/run/memcached.pid" ] ; then
+       touch /var/run/memcached.pid
+       chown ${USER}.${USER} /var/run/memcached.pid
+    fi
+    $memcached_location/bin/memcached -d -p $PORT -u $USER -m $CACHESIZE -c $MAXCONN -P /var/run/memcached.pid $OPTIONS
+    RETVAL=$?
+    echo
+        [ ! -d "/var/lock/subsys" ] && mkdir -p /var/lock/subsys/
+    [ $RETVAL -eq 0 ] && touch /var/lock/subsys/memcached
+}
+
+stop () {
+    echo -n $"Stopping $prog: "
+    if [ ! -f "/var/run/memcached.pid" ] ; then
+       echo "memcached not running!"
+       exit 1 ;
+    fi
+    kill `cat /var/run/memcached.pid`
+    RETVAL=$?
+    echo
+    if [ $RETVAL -eq 0 ] ; then
+        rm -f /var/lock/subsys/memcached
+        rm -f /var/run/memcached.pid
+    fi
+}
+
+restart () {
+    stop
+    start
+}
+
+
+# See how we were called.
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+    stop
+    ;;
+    restart|reload)
+    restart
+    ;;
+    *)
+    echo $"Usage: $0 {start|stop|status|restart|reload}"
+    exit 1
+esac
+
+exit $?

@@ -1,0 +1,119 @@
+#!/bin/bash
+
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  chg hostname
+#   AUTHOR: Liang jian
+#===============================================================================
+
+
+function config(){
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+
+  # 彩色显示
+  ENV_HOSTNAME_COLOUR=
+
+  # 安装
+  ENV_HOSTNAME_INSTALL=
+}
+
+function env_hostname_do_param(){
+  local param=
+  [ $# == 0 ] && return ;
+  for param in "$@" ; do
+      test ".${param}" = ".-c" && ENV_HOSTNAME_COLOUR="true" ;
+      test ".${param}" = ".-i" && ENV_HOSTNAME_INSTALL="true" ;
+      test ".${param}" = ".c" && ENV_HOSTNAME_COLOUR="true" ;
+  done
+}
+
+function hostname_2_hostgroup(){
+  local hostname=`hostname`
+  hostname=`sed 's/-test//g' <<< ${hostname}`
+  hostname=`sed 's/-dev//g' <<< ${hostname}`
+  hostname=`sed 's/-daily//g' <<< ${hostname}`
+  hostname=`sed 's/-gray//g' <<< ${hostname}`
+  hostname=`sed 's/-production//g' <<< ${hostname}`
+  hostname=`sed 's/-prod//g' <<< ${hostname}`
+  echo ${hostname}
+}
+
+function acq_env(){
+  local hostname=`hostname`
+  local find_env=`echo ${hostname} | grep -E '\-test|\-dev|\-daily|\-gray|\-prod|\-production'`
+  test ".${find_env}" = . &&  echo "prod" && return 
+  local env=`awk -F\- '{print $NF}' <<< ${hostname}`
+  test ".${env}" = ".production" &&  env="prod"
+  echo ${env}
+}
+
+function invoke_env_hostname(){
+  local hostname=$1
+  local env=$2
+  case "$env" in
+    test)
+      if [ ".${ENV_HOSTNAME_COLOUR}" = ".true" ] ; then
+         PS1="[\u@\e[34m${hostname}(test)\e[0m \W]\$" 
+      else   
+         PS1="[\u@${hostname}(test) \W]\$" # test
+      fi  ;;
+    dev)
+      if [ ".${ENV_HOSTNAME_COLOUR}" = ".true" ] ; then
+         PS1="[\u@\e[36m${hostname}(dev)\e[0m \W]\$"
+      else   
+         PS1="[\u@${hostname}(dev) \W]\$" # dev
+      fi ;;   
+    daily)
+      if [ ".${ENV_HOSTNAME_COLOUR}" = ".true" ] ; then
+         PS1="[\u@\e[32m${hostname}(daily)\e[0m \W]\$"
+      else  
+         PS1="[\u@${hostname}(daily) \W]\$" # daily
+      fi ;;
+    gray)
+      if [ ".${ENV_HOSTNAME_COLOUR}" = ".true" ] ; then
+         PS1="[\u@\e[33m${hostname}(gray)\e[0m \W]\$"
+      else   
+         PS1="[\u@${hostname}(gray) \W]\$"  # gray
+      fi ;;   
+    prod)
+      if [ ".${ENV_HOSTNAME_COLOUR}" = ".true" ] ; then 
+         PS1="[\u@\e[31m${hostname}(prod)\e[0m \W]\$"
+      else   
+         PS1="[\u@${hostname}(prod) \W]\$"  # production
+      fi ;;
+  esac
+  export PS1
+}
+
+function do_env_hostname(){
+  local hostname=`hostname_2_hostgroup`
+  local env=`acq_env`
+  invoke_env_hostname $hostname $env ;
+}
+
+function unset_config(){
+  if [ ".${ENV_HOSTNAME_INSTALL}" = ".true" ] ; then 
+     local config_line=`grep -n 'env_hostname' /etc/profile | awk -F: '{print $1}'`
+     test ".${config_line}" != "." && sed -i "${config_line}d" /etc/profile
+  fi   
+}
+
+function set_config(){
+  # 修改配置文件中配置项(非附值型)
+  local file=/etc/profile
+  if [ ".${ENV_HOSTNAME_COLOUR}" = ".true" ] ; then
+     local key='. ${PROMETHEUS_HOME}/bin/system/env_hostname -c'
+  else  
+     local key='. ${PROMETHEUS_HOME}/bin/system/env_hostname'
+  fi   
+  if [ "`cat ${file} | grep -c env_hostname`" == "0" ] ; then
+     echo "${key}" >> ${file}
+  fi
+}
+
+config ;
+env_hostname_do_param $@ ;
+do_env_hostname ;
+unset_config
+set_config

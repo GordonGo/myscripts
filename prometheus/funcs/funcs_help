@@ -1,0 +1,323 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  Prometheus funcs_help
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+
+function prometheus_help(){
+  # 框架帮助信息
+  # @param modName
+  local modName=$1
+  if eval type prometheus_help_${modName} > /dev/null 2>&1 ; then
+     eval prometheus_help_${modName}
+  else 
+     eval prometheus_help_default
+  fi
+}
+
+function prometheus_help_default(){
+  echoPlus error "unknow help!" ;
+}
+
+
+function help_format(){
+  # 增强显示
+  # @param color  (31|91 红  32|92绿  33|93黄 34|94蓝 35|95紫 36|96天蓝)
+  # @param content
+  local colorCode=$1
+  local content=$2
+  case "${colorCode}" in 
+      param|p)
+         colorCode=92 ;;
+      value|v)
+         colorCode=95 ;;
+      content|c)
+         colorCode=92 ;;
+  esac
+  test "$1" == . && echo " "
+  IFS=$'\t\n'
+  echo -e "\e[${colorCode}m${content}\e[0m"
+}
+
+function prometheus_help_install_java(){
+  help_format param   -java.install.version ;
+  help_format value   'value[No default]' ;
+  help_format content 必要参数,若没有则进入交互模式安装 ;
+  help_format content '8u45 安装特定版本的jdk' ;
+  help_format content eg:-java.install.version=8u45 ;
+  help_format content '6-8 安装分支最新版本' ;
+  help_format content eg:-java.install.version=7 ;
+  help_format content 'update 升级到当前分支最新版本' ;
+  help_format content eg:-java.install.version=update ;
+  help_format
+
+  help_format param   -jdk.download.path ;
+  help_format value   value[/data/www/software/jdk] ;
+  help_format content 指定jdk下载路径
+  help_format
+
+  help_format param   -tomcat.res.conf.download.url ;
+  help_format value   value[http://res.swomc.net/software/PROMETHEUS/etc/tomcat_res.conf]
+  help_format content 指定资源文件下载路径
+}
+
+function prometheus_help_uninstall_tomcat(){
+  help_format param   -tomcat.uninstall.name
+  help_format value   'value[No default]' ;
+  help_format content 需要卸载的tomcat名称，若输入all则代表卸载全部
+  help_format
+
+  help_format param   -del.tomcat.logs
+  help_format value   'value[false]' ;
+  help_format content 删除日志文件
+  help_format
+
+  help_format param   -del.tomcat.root
+  help_format value   'value[false]' ;
+  help_format content 删除tomcat的webapps目录
+  help_format 
+
+  help_format param   -del.tomcat.conf
+  help_format value   'value[false]' ;
+  help_format content 删除tomcat配置文件
+  help_format
+
+  help_format param   -init
+  help_format content 初始化虚拟机内的tomcat，清除所有相关文件，新机器或需要重新部署的机器可用
+  help_format content 使用此参数则忽略其它所有参数，如有重要数据请先备份
+  help_format
+}
+
+function prometheus_help_install_tomcat(){
+  help_format param   -tomcat.setenv.file
+  help_format value   'value[tomcat_setenv.conf]' ;
+  help_format content 从url加载tomcat_setenv.conf配置文件并覆盖本地配置，缺省则读取本地文件
+  help_format content eg:-tomcat.setenv.file=http://res.omc.net/tomcat_setenv.conf
+  help_format
+
+  help_format param   -tomcat.service.start
+  help_format value   'value[false]' ;
+  help_format content 安装完成后是否运行tomcat实例
+  help_format content eg:-tomcat.service.start=true
+  help_format
+
+  help_format param   -tomcat.install.version
+  help_format value   'value[No default]' ;
+  help_format content 必要参数,若没有则进入交互模式安装 ;
+  help_format content '8021 安装特定版本的jdk' ;
+  help_format content 'eg:-tomcat.install.version=8021' ;
+  help_format content '6-8 安装分支最新版本' ;
+  help_format content 'eg:-tomcat.install.version=7' ;
+  help_format content 'update 升级到当前分支最新版本' ;
+  help_format content 'eg:-tomcat.install.version=update' ;
+  help_format
+
+  help_format param   -probe.install.version
+  help_format value   'value[notInstall]' ;
+  help_format content '安装probe版本，只能精确匹配版本号' ;
+  help_format content '不建议生产环境安装' ;
+  help_format content 'eg:-probe.install.version=233' ;
+  help_format param   -probe.install.version
+  help_format value   'value[admin:randompasswd]' ;
+  help_format content '不建议生产环境安装' ;
+  help_format content '-probe.userpasswd=admin:123456' ; 
+  help_format
+
+  help_format param   -tomcat.manager
+  help_format value   'value[false]' ;
+  help_format content '是否安装tomcat自带的manager，默认不安装，不建议在生产环境安装' ;  
+  help_format
+
+  help_format param   -tomcat.display.version ;
+  help_format value   'value[sws]' ;  
+  help_format content 伪装版本号默认为sws
+  help_format
+
+  help_format param   -tomcat.install.name ;
+  help_format value   'value[No default]' ;  
+  help_format content 安装的tomcat实例名字多个用:分割，如果全部安装则输入all
+  help_format content 'eg:-tomcat.install.name=all'
+  help_format
+
+  help_format param   -tomcat.install.path ;
+  help_format value   'value[/usr/local]' ;  
+  help_format content '自定义安装路径，此参数使用后需要修改tomcat_setenv.conf中的TOMCAT_INSTALL_PATH设置'
+  help_format content 'eg:-tomcat.install.path=/usr/local'
+  help_format
+
+  help_format param   -tomcat.http.uri.encoding 
+  help_format value   'value[utf8]' ;
+  help_format content '设定安装的tomcat的http端口编码，若值为null则不强制'
+  help_format content 'eg:-tomcat.http.uri.encoding=null'
+  help_format content 'eg:-tomcat.http.uri.encoding=utf8'
+  help_format
+
+  help_format param   -pkg.download.path
+  help_format value   'value[${PROMETHEUS_HOME}/pkg]' ;
+  help_format content '设定本地下载路径'
+  help_format content 'eg:-pkg.download.path=/data/www/temp'
+  help_format
+
+}
+
+function prometheus_help_deployment_project(){
+  help_format param   -tomcat.service.restart
+  help_format value   'value[false]' ;
+  help_format content 部署完成后是否重启tomcat，默认不重启
+  help_format content eg:-tomcat.service.restart=true
+  help_format
+
+  help_format param   -tomcat.app.backup
+  help_format value   'value[tomcat_setenv.conf]' ;
+  help_format content 部署操作前是否备份目录，默认配置读取本地tomcat_setenv.conf
+  help_format content eg:-tomcat.app.backup=true
+  help_format
+
+  help_format param   -tomcat.del.logs
+  help_format value   'value[false]' ;
+  help_format content 部署操作是否参数相关日志，默认不删除
+  help_format content eg:-tomcat.del.logs=true
+  help_format
+
+  help_format param   -tomcat.app.name
+  help_format value   'value[No default]' ;
+  help_format content 部署操作对应的tomcat名称，不可缺省
+  help_format content eg:-tomcat.app.name=demo
+  help_format
+
+  help_format param   -tomcat.project.deployment.pkg.path
+  help_format value   'value[No default]' ;
+  help_format content 部署操作对应的本地升级包路径
+  help_format content 若与-tomcat.project.deployment.pkg.download.url参数同时存在，则本地升级包优先级高于url下载
+  help_format content eg:-tomcat.project.deployment.pkg.path=/data/www/update/20150404-093050/admin.war
+  help_format param   -tomcat.project.deployment.pkg.download.url
+  help_format value   'value[No default]' ;
+  help_format content 部署操作对应的本地升级包路径
+  help_format content 优先级低于本地升级路径
+  help_format content eg:-tomcat.project.deployment.pkg.download.url=http://res.swomc.net/admin.war 
+  help_format
+
+  help_format param   -tomcat.project.deployment.pkg.md5code
+  help_format value   'value[No default]' ;
+  help_format content 部署升级包的md5码，参数缺省时则不校验包
+  help_format content eg:-tomcat.project.deployment.pkg.md5code=82309362f0a05052ad851fdef01f4671 
+  help_format
+
+  help_format param   -tomcat.project.deployment.pkg.local.path
+  help_format value   'value[/data/www/update/default]' ;
+  help_format content 部署升级包的下载路径
+  help_format content eg:-tomcat.project.deployment.pkg.local.path=/data/www/update/default
+  help_format
+
+  help_format param   -tomcat.project.deployment.type
+  help_format value   'value[full|diff]' ;
+  help_format content 升级类型，默认按升级包类型，war包为full，zip包为diff
+  help_format content eg:-tomcat.project.deployment.type=full
+  help_format
+                   
+  help_format param   -tomcat.project.conf.download.url
+  help_format value   'value[tomcat_setenv.conf]' ;
+  help_format content 升级项目配置文件下载url，2个参数必须配合使用，或都缺省使用本地配置
+  help_format content eg:-tomcat.project.conf.download.url=http://res.swomc.net/
+  help_format param   -tomcat.project.conf.download.name
+  help_format value   'value[tomcat_setenv.conf]' ;
+  help_format content 升级项目配置文件下载文件名，2个参数必须配合使用，或都缺省使用本地配置
+  help_format content eg:-tomcat.project.conf.download.name=log4j.properties:server.properties 
+  help_format
+
+}
+
+function prometheus_help_tomcat(){
+  # 帮助信息，参数说明
+  help_format param   'chkconfig tomcat on|off' 
+  help_format content '启用或关闭tomcat服务' ;
+  help_format content 'eg:chkconfig tomcat on' ;
+  help_format
+
+  help_format param   '无参数或参数错误' 
+  help_format content '查看所有tomcat服务信息' ;
+  help_format content 'eg:tomcat' ;
+  help_format
+
+  help_format param   'v | version' 
+  help_format content '查看所有tomcat版本信息' ;
+  help_format content 'eg:tomcat v' ;
+  help_format
+
+  help_format param   'info' 
+  help_format content '查看所有tomcat jvm配置信息' ;
+  help_format content 'eg:tomcat info' ;
+  help_format
+
+  help_format param   'killall' 
+  help_format content 'kill所有tomcat进程' ;
+  help_format content 'eg:tomcat killall' ;
+  help_format
+
+  help_format param   'start | stop | restart | kill' 
+  help_format content '对所有的tomcat实例进行服务管理' ;
+  help_format content 'eg:tomcat start' ;
+  help_format
+
+  help_format param   '{tomcatAppName|tomcatHttpPort} version' 
+  help_format content '查看单个tomcat版本信息' ;
+  help_format content 'eg:tomcat demo version' ;
+  help_format content 'eg:tomcat 8080 v' ;
+  help_format
+
+  help_format param   '{tomcatAppName|tomcatHttpPort} {start|stop|restart|kill}' 
+  help_format content '对单个tomcat实例进行服务管理' ;
+  help_format content 'eg:tomcat demo start' ;
+  help_format content 'eg:tomcat 8080 stop' ;
+  help_format
+
+  help_format param   '{tomcatAppName|tomcatHttpPort} dump' 
+  help_format content 'stack/heap dump' ;
+  help_format content 'eg:tomcat demo dump' ;
+  help_format content 'eg:tomcat 8080 dump' ;
+  help_format
+
+  help_format param   '{reloadable=true|reloadable=false}' 
+  help_format content '关闭或启用tomcat自动署和自动加载' ;
+  help_format content 'eg:tomcat reloadable=true' ;
+  help_format content 'eg:tomcat reloadable=false' ;
+  help_format
+
+  help_format param   '{jvm}' 
+  help_format content '查看jvm启动参数' ;
+  help_format content 'eg:tomcat jvm' ;
+
+  help_format
+}
+
+function prometheus_help_eznas(){
+  # 帮助信息，参数说明
+  echoPlus 36 '查看当前挂载信息(NFS)' ;
+  echoPlus 32 'eznas l' ;
+
+  echoPlus 36 'mount所有NFS挂载' ;
+  echoPlus 32 'eznas m' ;
+
+  echoPlus 36 'unmount所有NFS挂载' ;
+  echoPlus 32 'eznas u' ;
+
+  echoPlus 36 '新增挂载NFS' ;
+  echoPlus 32 'eznas NFS_SERVER_PATH LOCAL_PATH [ACCOUNT]' ;
+  echoPlus 32 '$1 NFS_SERVER_PATH 服务器路径 eg: 172.16.15.179:/nx3500v5/domain.com/www.sdomain.com' ;
+  echoPlus 32 '$2 LOCAL_PATH 本地路径(这个是相对路径/data/www/nas)  eg: page  如果使用page,那实际地址为/data/www/nas/page' ;
+  echoPlus 32 '$3 ACCOUNT 账户可选参数，默认为tomcat' ;
+  echoPlus 32 'eg : eznas 172.16.15.179:/vol1/domain.com/www.domain.com page' ;
+}
+
+function prometheus_help_upload(){
+  # upload 命令帮助信息，参数说明3
+  echoPlus 36 '上传一个文件到文件服务器' ;
+  echoPlus 32 'upload $file' ;
+
+  echoPlus 36 '上传一个目录到文件服务器' ;
+  echoPlus 32 'upload $dir' ;
+}
+
+

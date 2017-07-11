@@ -1,0 +1,79 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  install zabbix
+#   AUTHOR: Liang Jian
+#   DATE: 2015 07
+#   QQ:  80327044
+#===============================================================================
+
+function config(){
+  #-------配置项--------------------------
+  . /etc/profile
+  
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  DEBUG=true
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi   
+}
+
+function load_zabbix_res(){
+  # 载入配置
+  test ".${FLUMEMONITOR_RES}" = . && FLUMEMONITOR_RES="http://res.51xianqu.net/software/PROMETHEUS/etc/flumemonitor_res.conf"
+  loadUrlResFile ${FLUMEMONITOR_RES} ;
+}
+
+function doInstall(){
+   doInstall_download ;
+   doInstall_unzip_pkg ;
+   doInstall_service  ;
+   doInstall_flumemonitor_log ;
+   #doInstall_zabbix_conf ;
+}
+
+
+
+function doInstall_download(){
+   # 下载资源包
+   if [ ".${FLUMEMONITOR_PKD_MD5}" == "." ] || [ ".${FLUMEMONITOR_PKD_MD5}" == ".-" ] ; then
+        execWget ${FLUMEMONITOR_PKG_DOWNLOAD_URL} ${PROMETHEUS_HOME}/pkg/flumemonitor/ ;
+   else
+        execWget ${FLUMEMONITOR_PKG_DOWNLOAD_URL} ${PROMETHEUS_HOME}/pkg/flumemonitor/ ${FLUMEMONITOR_PKD_MD5} ;  
+   fi
+}
+
+function doInstall_unzip_pkg(){
+  # 解压包
+  local fileName=`basename ${FLUMEMONITOR_PKG_DOWNLOAD_URL}`
+  mkdir -p /data/www/install/flume-monitor
+  execUnzip ${PROMETHEUS_HOME}/pkg/flumemonitor/${fileName} /data/www/install/flume-monitor
+}
+
+function doInstall_service(){
+  # 创建服务
+  cd /etc/init.d
+  ln -sf /data/www/install/flume-monitor/bin/flume-monitor
+  chkconfig flume-monitor on
+}
+
+function doInstall_flumemonitor_log(){
+  mkdir -p /data/www/logs/flume-monitor
+}
+
+
+config ;
+#doParam $@ ;
+service flume-monitor stop ;
+load_zabbix_res
+doInstall ;
+service flume-monitor start ;
+
+

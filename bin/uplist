@@ -1,0 +1,332 @@
+#!/bin/bash
+#-------配置项--------------------------
+TOMCAT_APP_NAME_OPT=
+TOMCAT_HTTP_PORT_OPT=
+
+# 加载函数
+test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+   . ${PROMETHEUS_HOME}/funcs/funcs
+else
+   echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+   exit 1 ;
+fi      
+
+# 加载PROMETHEUS配置
+loadConf prometheus.conf ;
+
+# 加载TOMCAT配置
+loadConf tomcat_setenv.conf ;
+
+echo "AppUpdate bash shell"
+echo "version 2.0.1  20131128 by ixrjog@qq.com"
+echo $DIVIDING_LINE
+
+#初始化环境文件和变量
+rm -f /data/www/update/update-tmp/update2_info.conf
+
+I_MAX=$(( ${#TOMCAT_APP_NAME_OPT[@]} - 1 ))
+LIST_NUM=0
+ERROR_N=yes
+
+case "$#" in
+0)
+ UPDATE_DISPLAY_MODE="TIME"
+ DISPLAY_LINE=25 ;;
+1)
+  case "$1" in
+  time|TIME)
+    UPDATE_DISPLAY_MODE="TIME";;
+  app|APP)
+    UPDATE_DISPLAY_MODE="APP";;
+  *)
+    if [ "$1" -ge "1" ] && [ "$1" -le "150" ];then
+	  UPDATE_DISPLAY_MODE="TIME"
+      DISPLAY_LINE=$1
+    fi;;
+  esac
+  ;;
+2)
+  case "$1" in
+  time)
+    UPDATE_DISPLAY_MODE="TIME";;
+  app)
+    UPDATE_DISPLAY_MODE="APP";;
+  esac
+  if [ "$2" -ge "1" ] && [ "$2" -le "150" ];then
+    DISPLAY_LINE=$2
+  fi
+  ;;
+esac
+  #调试信息
+  #echo $UPDATE_DISPLAY_MODE $DISPLAY_LINE
+if [ ! -d "/data/www/update/update-tmp" ] ;then
+  mkdir -p /data/www/update/update-tmp
+fi
+
+case "$UPDATE_DISPLAY_MODE" in
+TIME)
+#按最后时间升级
+  echo -e "1.\e[32mUpdate APP\e[0m"
+  echo -e "2.\e[31mRecovery Before Upgrade\e[0m"
+  echo -e "3.\e[35mRecovery After Upgrade\e[0m"
+  read -p "please select: " quick
+  case "$quick" in
+  1)
+    find /data/www/update/ |awk -F/ '{if (($5~/[0-9]+/) && ($6~/(war|zip)/)) print $0} '|sort -r|head -$DISPLAY_LINE >> /data/www/update/update-tmp/update2_info.conf
+    echo $DIVIDING_LINE
+    echo -e "\e[32mUpdate APP\e[0m"
+    printf "%-5s %-15s %-30s %-12s %-45s\n" NUM DATE PORT/APPNAME MODE FILEPATH
+    echo $DIVIDING_LINE
+    for UPDATE_INFO_LINE in $(cat /data/www/update/update-tmp/update2_info.conf)
+    do
+      UPDATE_DATE=`echo ${UPDATE_INFO_LINE} | awk -F"/" '{print $5}'`
+      UPDATE_APPNAME=`echo ${UPDATE_INFO_LINE} | awk -F"/" '{print $NF}' | awk -F\. '{print $1}'`
+      for((i=0;i<=$I_MAX;i++))
+      do
+        TOMCAT_APP_NAME=${TOMCAT_APP_NAME_OPT[$i]}
+        if [ "$TOMCAT_APP_NAME" == "$UPDATE_APPNAME" ];then
+          UPDATE_APPPORT=${TOMCAT_HTTP_PORT_OPT[$i]}
+        fi
+      done
+      UPDATE_MODE=`echo ${UPDATE_INFO_LINE} | awk -F\. '{print $NF}'`
+      case $UPDATE_MODE in
+      war) UPDATE_MODE="full"
+        printf "%-5s %-15s %-30s \e[32m${UPDATE_MODE}\e[0m%-8s ${UPDATE_INFO_LINE}%-15s\n" $LIST_NUM ${UPDATE_DATE} ${UPDATE_APPPORT}/${UPDATE_APPNAME} ;;
+      zip) UPDATE_MODE="diff"
+        printf "%-5s %-15s %-30s \e[35m${UPDATE_MODE}\e[0m%-8s ${UPDATE_INFO_LINE}%-15s\n" $LIST_NUM ${UPDATE_DATE} ${UPDATE_APPPORT}/${UPDATE_APPNAME} ;;
+      esac
+    LIST_NUM=$(( $LIST_NUM + 1 ))
+    done
+    echo $DIVIDING_LINE
+    read -p "please select: " quick
+    #/data/www/update/20131125/insurance-plugin.war
+    COUNT_FILE_LINE=`wc -l /data/www/update/update-tmp/update2_info.conf|awk '{print $1}'`
+    if [ "${quick}" -ge "0" ] && [ "${quick}" -le "${COUNT_FILE_LINE}" ];then
+      let quick++
+      UPDATE_APP_FILE_PATH=`sed -n "${quick},${quick}p" /data/www/update/update-tmp/update2_info.conf`
+    else
+      echo "The wrong choice, exit the program!"
+    fi;;
+  2)
+    find /data/www/update/update-backup/BeforeUpgrade/ |awk -F/ '{if ($7~/[0-9]+/) print $0} '|grep "\.war$"|sort -r|head -$DISPLAY_LINE >> /data/www/update/update-tmp/update2_info.conf
+    echo $DIVIDING_LINE
+    echo -e "\e[31mRecovery Before Upgrade\e[0m"  
+    printf "%-5s %-10s %-10s %-25s %-45s\n" NUM DATE TIME PORT/APPNAME FILEPATH
+    echo $DIVIDING_LINE
+    #/data/www/update/update-backup/BeforeUpgrade/20131125/insurance-plugin/201858/insurance-plugin.war
+    for UPDATE_INFO_LINE in $(cat /data/www/update/update-tmp/update2_info.conf)
+    do
+      UPDATE_DATE=`echo ${UPDATE_INFO_LINE} | awk -F"/" '{print $7}'`
+      UPDATE_TIME=`echo ${UPDATE_INFO_LINE} | awk -F"/" '{print $9}'`
+      UPDATE_APPNAME=`echo ${UPDATE_INFO_LINE} | awk -F"/" '{print $NF}' | awk -F\. '{print $1}'`
+      for((i=0;i<=$I_MAX;i++))
+      do
+        TOMCAT_APP_NAME=${TOMCAT_APP_NAME_OPT[$i]}
+        if [ "$TOMCAT_APP_NAME" == "$UPDATE_APPNAME" ];then
+          UPDATE_APPPORT=${TOMCAT_HTTP_PORT_OPT[$i]}
+        fi
+      done
+      printf "%-5s %-10s %-10s %-25s %-45s\n" $LIST_NUM ${UPDATE_DATE} ${UPDATE_TIME} ${UPDATE_APPPORT}/${UPDATE_APPNAME} ${UPDATE_INFO_LINE}
+    LIST_NUM=$(( $LIST_NUM + 1 ))
+    done
+    echo $DIVIDING_LINE
+    read -p "please select: " quick
+    #/data/www/update/20131125/insurance-plugin.war
+	COUNT_FILE_LINE=`wc -l /data/www/update/update-tmp/update2_info.conf|awk '{print $1}'`
+    if [ "${quick}" -ge "0" ] && [ "${quick}" -le "${COUNT_FILE_LINE}" ];then
+      let quick++
+      UPDATE_APP_FILE_PATH=`sed -n "${quick},${quick}p" /data/www/update/update-tmp/update2_info.conf`
+    else
+      echo "The wrong choice, exit the program!"
+    fi;;
+  3)
+  #/data/www/update/update-backup/AfterUpgrade/wxmp-robot/20131123/191556/wxmp-robot.war
+    find /data/www/update/update-backup/AfterUpgrade/ |awk -F/ '{if ($8~/[0-9]+/) print $0} '|grep "\.war$"|sort -r|head -$DISPLAY_LINE >> /data/www/update/update-tmp/update2_info.conf
+    echo $DIVIDING_LINE
+    echo -e "\e[35mRecovery After Upgrade\e[0m"
+    printf "%-5s %-10s %-10s %-25s %-45s\n" NUM DATE TIME PORT/APPNAME FILEPATH
+    echo $DIVIDING_LINE
+    for UPDATE_INFO_LINE in $(cat /data/www/update/update-tmp/update2_info.conf)
+    do
+      UPDATE_DATE=`echo ${UPDATE_INFO_LINE} | awk -F"/" '{print $8}'`
+      UPDATE_TIME=`echo ${UPDATE_INFO_LINE} | awk -F"/" '{print $9}'`
+      UPDATE_APPNAME=`echo ${UPDATE_INFO_LINE} | awk -F"/" '{print $NF}' | awk -F\. '{print $1}'`
+      for((i=0;i<=$I_MAX;i++))
+      do
+        TOMCAT_APP_NAME=${TOMCAT_APP_NAME_OPT[$i]}
+        if [ "$TOMCAT_APP_NAME" == "$UPDATE_APPNAME" ];then
+          UPDATE_APPPORT=${TOMCAT_HTTP_PORT_OPT[$i]}
+        fi
+      done
+      printf "%-5s %-10s %-10s %-25s %-45s\n" $LIST_NUM ${UPDATE_DATE} ${UPDATE_TIME} ${UPDATE_APPPORT}/${UPDATE_APPNAME} ${UPDATE_INFO_LINE}
+    LIST_NUM=$(( $LIST_NUM + 1 ))
+    done
+    echo $DIVIDING_LINE
+    read -p "please select: " quick
+    #/data/www/update/20131125/insurance-plugin.war
+    COUNT_FILE_LINE=`wc -l /data/www/update/update-tmp/update2_info.conf|awk '{print $1}'`
+    if [ "${quick}" -ge "0" ] && [ "${quick}" -le "${COUNT_FILE_LINE}" ];then
+      let quick++
+      UPDATE_APP_FILE_PATH=`sed -n "${quick},${quick}p" /data/www/update/update-tmp/update2_info.conf`
+    else
+      echo "The wrong choice, exit the program!"
+    fi;;
+  esac
+  ;;
+APP)
+#按APP名称升级
+  echo $DIVIDING_LINE
+  echo -e "\e[32mSelect Update APP\e[0m"
+  printf "%-5s %-25s\n" NUM PORT/APPNAME
+  echo $DIVIDING_LINE
+  for((i=0;i<=$I_MAX;i++))
+  do
+    UPDATE_APPNAME=${TOMCAT_APP_NAME_OPT[$i]}
+    UPDATE_APPPORT=${TOMCAT_HTTP_PORT_OPT[$i]}
+    printf "%-5s %-25s\n" $LIST_NUM ${UPDATE_APPPORT}/${UPDATE_APPNAME}
+    LIST_NUM=$(( $LIST_NUM + 1))
+  done
+  read -p "please select: " quick
+  if [ "${quick}" -ge "0" ] && [ "${quick}" -le "$I_MAX" ];then
+    UPDATE_APPNAME=${TOMCAT_APP_NAME_OPT[$quick]}
+    UPDATE_APPPORT=${TOMCAT_HTTP_PORT_OPT[$quick]}
+  fi
+
+  echo -e "1.\e[32mUpdate APP\e[0m"
+  echo -e "2.\e[31mRecovery Before Upgrade\e[0m"
+  echo -e "3.\e[35mRecovery After Upgrade\e[0m"
+  read -p "please select: " quick
+
+  LIST_NUM=0
+  case "$quick" in
+  1)
+    #/data/www/update/20131125/insurance-plugin.war
+    find /data/www/update/ |awk -F/ '{if ($5~/[0-9]+/)  print $0} '| grep -P "$UPDATE_APPNAME\.(zip|war)$"|sort -r|head -$DISPLAY_LINE >> /data/www/update/update-tmp/update2_info.conf
+	 cat /data/www/update/update-tmp/update2_info.conf
+    echo $DIVIDING_LINE
+    echo -e "\e[32mUpdate APP\e[0m"
+    printf "%-5s %-10s %-25s %-12s %-45s\n" NUM DATE PORT/APPNAME MODE FILEPATH
+    echo $DIVIDING_LINE
+    for UPDATE_INFO_LINE in $(cat /data/www/update/update-tmp/update2_info.conf)
+    do
+      UPDATE_DATE=`echo ${UPDATE_INFO_LINE} | awk -F"/" '{print $5}'`
+      UPDATE_APPNAME=`echo ${UPDATE_INFO_LINE} | awk -F"/" '{print $NF}' | awk -F\. '{print $1}'`
+      for((i=0;i<=$I_MAX;i++))
+      do
+        TOMCAT_APP_NAME=${TOMCAT_APP_NAME_OPT[$i]}
+        if [ "$TOMCAT_APP_NAME" == "$UPDATE_APPNAME" ];then
+          UPDATE_APPPORT=${TOMCAT_HTTP_PORT_OPT[$i]}
+        fi
+      done
+      UPDATE_MODE=`echo ${UPDATE_INFO_LINE} | awk -F\. '{print $NF}'`
+      case $UPDATE_MODE in
+      war) UPDATE_MODE="full"
+        printf "%-5s %-10s %-25s \e[32m${UPDATE_MODE}\e[0m%-8s ${UPDATE_INFO_LINE}%-15s\n" $LIST_NUM ${UPDATE_DATE} ${UPDATE_APPPORT}/${UPDATE_APPNAME} ;;
+      zip) UPDATE_MODE="diff"
+        printf "%-5s %-10s %-25s \e[35m${UPDATE_MODE}\e[0m%-8s ${UPDATE_INFO_LINE}%-15s\n" $LIST_NUM ${UPDATE_DATE} ${UPDATE_APPPORT}/${UPDATE_APPNAME} ;;
+      esac
+    LIST_NUM=$(( $LIST_NUM + 1 ))
+    done
+    echo $DIVIDING_LINE
+    read -p "please select: " quick
+    #/data/www/update/20131125/insurance-plugin.war
+    COUNT_FILE_LINE=`wc -l /data/www/update/update-tmp/update2_info.conf|awk '{print $1}'`
+    if [ "${quick}" -ge "0" ] && [ "${quick}" -le "${COUNT_FILE_LINE}" ];then
+      let quick++
+      UPDATE_APP_FILE_PATH=`sed -n "${quick},${quick}p" /data/www/update/update-tmp/update2_info.conf`
+    else
+      echo "The wrong choice, exit the program!"
+    fi;;
+  2)
+    find /data/www/update/update-backup/BeforeUpgrade/ |awk -F/ '{if ($7~/[0-9]+/) print $0} '|grep -P "$UPDATE_APPNAME\.war$"|sort -r|head -$DISPLAY_LINE >> /data/www/update/update-tmp/update2_info.conf
+    echo $DIVIDING_LINE
+    echo -e "\e[31mRecovery Before Upgrade\e[0m"  
+    printf "%-5s %-10s %-10s %-25s %-45s\n" NUM DATE TIME PORT/APPNAME FILEPATH
+    echo $DIVIDING_LINE
+    #/data/www/update/update-backup/BeforeUpgrade/20131125/insurance-plugin/201858/insurance-plugin.war
+    for UPDATE_INFO_LINE in $(cat /data/www/update/update-tmp/update2_info.conf)
+    do
+      UPDATE_DATE=`echo ${UPDATE_INFO_LINE} | awk -F"/" '{print $7}'`
+      UPDATE_TIME=`echo ${UPDATE_INFO_LINE} | awk -F"/" '{print $9}'`
+      UPDATE_APPNAME=`echo ${UPDATE_INFO_LINE} | awk -F"/" '{print $NF}' | awk -F\. '{print $1}'`
+      for((i=0;i<=$I_MAX;i++))
+      do
+        TOMCAT_APP_NAME=${TOMCAT_APP_NAME_OPT[$i]}
+        if [ "$TOMCAT_APP_NAME" == "$UPDATE_APPNAME" ];then
+          UPDATE_APPPORT=${TOMCAT_HTTP_PORT_OPT[$i]}
+        fi
+      done
+      printf "%-5s %-10s %-10s %-25s %-45s\n" $LIST_NUM ${UPDATE_DATE} ${UPDATE_TIME} ${UPDATE_APPPORT}/${UPDATE_APPNAME} ${UPDATE_INFO_LINE}
+    LIST_NUM=$(( $LIST_NUM + 1 ))
+    done
+    echo $DIVIDING_LINE
+    read -p "please select: " quick
+    #/data/www/update/20131125/insurance-plugin.war
+	COUNT_FILE_LINE=`wc -l /data/www/update/update-tmp/update2_info.conf|awk '{print $1}'`
+    if [ "${quick}" -ge "0" ] && [ "${quick}" -le "${COUNT_FILE_LINE}" ];then
+      let quick++
+      UPDATE_APP_FILE_PATH=`sed -n "${quick},${quick}p" /data/www/update/update-tmp/update2_info.conf`
+    else
+      echo "The wrong choice, exit the program!"
+    fi;;
+  3)
+  #/data/www/update/update-backup/AfterUpgrade/wxmp-robot/20131123/191556/wxmp-robot.war
+  #/data/www/update/update-backup/AfterUpgrade/hk-insurance-proxy/20140114/164046/hk-insurance-proxy.war
+    find /data/www/update/update-backup/AfterUpgrade/ |awk -F/ '{if ($8~/[0-9]+/) print $0} '|grep -P "$UPDATE_APPNAME\.war$"|sort -r|head -$DISPLAY_LINE >> /data/www/update/update-tmp/update2_info.conf
+    echo $DIVIDING_LINE
+    echo -e "\e[35mRecovery After Upgrade\e[0m"
+    printf "%-5s %-10s %-10s %-25s %-45s\n" NUM DATE TIME PORT/APPNAME FILEPATH
+    echo $DIVIDING_LINE
+    for UPDATE_INFO_LINE in $(cat /data/www/update/update-tmp/update2_info.conf)
+    do
+      UPDATE_DATE=`echo ${UPDATE_INFO_LINE} | awk -F"/" '{print $8}'`
+      UPDATE_TIME=`echo ${UPDATE_INFO_LINE} | awk -F"/" '{print $9}'`
+      UPDATE_APPNAME=`echo ${UPDATE_INFO_LINE} | awk -F"/" '{print $NF}' | awk -F\. '{print $1}'`
+      for((i=0;i<=$I_MAX;i++))
+      do
+        TOMCAT_APP_NAME=${TOMCAT_APP_NAME_OPT[$i]}
+        [ "$TOMCAT_APP_NAME" == "$UPDATE_APPNAME" ] && UPDATE_APPPORT=${TOMCAT_HTTP_PORT_OPT[$i]}
+      done
+      printf "%-5s %-10s %-10s %-25s %-45s\n" $LIST_NUM ${UPDATE_DATE} ${UPDATE_TIME} ${UPDATE_APPPORT}/${UPDATE_APPNAME} ${UPDATE_INFO_LINE}
+      LIST_NUM=$(( $LIST_NUM + 1 ))
+    done
+    echo $DIVIDING_LINE
+    read -p "please select: " quick
+    #/data/www/update/20131125/insurance-plugin.war
+    COUNT_FILE_LINE=`wc -l /data/www/update/update-tmp/update2_info.conf|awk '{print $1}'`
+    if [ "${quick}" -ge "0" ] && [ "${quick}" -le "${COUNT_FILE_LINE}" ];then
+      let quick++
+      UPDATE_APP_FILE_PATH=`sed -n "${quick},${quick}p" /data/www/update/update-tmp/update2_info.conf`
+    else
+      echo "The wrong choice, exit the program!"
+    fi;;
+  esac
+  ;;
+esac
+
+#用war包的路径生成命令行
+echo  $UPDATE_APP_FILE_PATH
+if [ -n "$UPDATE_APP_FILE_PATH" ];then
+  FIND_APP_PKG_NAME=`echo $UPDATE_APP_FILE_PATH|awk -F/ '{print $NF}'`
+  CMD_1=`echo $UPDATE_APP_FILE_PATH | awk -F\/ '{print $NF}' | awk -F\. '{print $1}'`
+  CMD_2=`echo $UPDATE_APP_FILE_PATH | cut -c18-255|sed "s#\/${FIND_APP_PKG_NAME}##"`
+  CMD_3=`echo $UPDATE_APP_FILE_PATH | awk -F\. '{print $2}'`
+  case "$CMD_3" in
+  war)
+    CMD_3="full";;
+  zip)
+    CMD_3="diff" ;;
+  esac
+fi
+
+if [ -n "$CMD_1" ] && [ -n "$CMD_2" ] && [ -n "$CMD_3" ];then
+  echo "${PROMETHEUS_HOME}/bin/appupdate $CMD_1 $CMD_2 $CMD_3"
+  ${PROMETHEUS_HOME}/bin/appupdate $CMD_1 $CMD_2 $CMD_3
+else
+  echo $DIVIDING_LINE
+  echo -e "\e[35mBeyond the range of choices, exit the program , Thank you for using !\e[0m"
+fi
+
+
+

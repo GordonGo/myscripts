@@ -1,0 +1,154 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  Mysql backup & recovery
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+#   2015-01-13
+#   1. 增加备份滚动，自动删除过期备份
+function config(){
+  . /etc/profile
+  #-------配置项(无需修改)--------------------------
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi      
+
+  # 加载PROMETHEUS配置
+  loadConf mysqlbackup.conf ;
+
+  # debug log
+  DEBUG_FILE_NAME=$(basename $0).log
+}
+
+function help() {
+  # 显示帮助
+  echoPlus 32 "backupdb.sh 无参数则自动备份,可用于crontab"
+  echoPlus 32 "backupdb.sh m|manual 手动备份(备份的目录不一样)"
+  echoPlus 32 "backupdb.sh r|recovery 恢复数据库"
+}
+
+function dbbackup(){
+  # 备份数据库
+  # @param dbname
+  # @param path
+  local dbname=$1
+  local backupPath=$2
+  execMkdir ${backupPath} ;
+  ${MYSQL_BIN}/mysqldump -h${DB_HOST} -u${DB_USER} -p${DB_PASSWORD} ${dbname} > ${backupPath}/${dbname}.sql 2>/dev/null
+  checkError ;
+}
+
+function dbrecovery(){
+  # 恢复
+  # @param dbname
+  # @param path
+  local dbname=$1
+  local backupPath=$2
+  execMkdir ${backupPath} ;
+  ${MYSQL_BIN}/mysql -h${DB_HOST} -u${DB_USER} -p${DB_PASSWORD} ${dbname} < ${backupPath}/${dbname}.sql 2>/dev/null
+  checkError ;
+}
+
+function doBackup(){
+  # 备份所有数据库
+  # @param path
+  local backupPath=$1
+  local db
+	for db in ${DB_ALL_OPT[@]}; do
+      dbbackup ${db} ${backupPath}
+	done
+}
+
+function doRecovery(){
+  # 恢复所有数据库
+  # @param path	
+  local backupPath=$1
+  local db
+	for db in ${DB_ALL_OPT[@]}; do
+      dbrecovery ${db} ${backupPath}
+	done
+}
+
+function recoveryByType(){
+  # @param type  (0 auto   1 manual)
+  local recoveryType=$1
+  [ -f ${TEMP_PATH}/db_backup_path.log ] && rm -f ${TEMP_PATH}/db_backup_path.log
+  [ ".${recoveryType}" == ".0" ] && find ${BACKUP_PATH}/* -type d | grep -v manual | sort -r >> ${TEMP_PATH}/db_backup_path.log
+  [ ".${recoveryType}" == ".1" ] && find ${BACKUP_PATH}/manual/* -type d | sort -r >> ${TEMP_PATH}/db_backup_path.log
+  while true ; do
+    local i=1
+    local line
+    for line in `head -n ${LINE_CNT} ${TEMP_PATH}/db_backup_path.log` ; do
+  	    date=`echo ${line} | awk -F'/' '{print $NF}'`
+        echo $i") "${date}"."
+        let i++
+    done
+    read -p "please select: " quick
+    [ "${quick}" -ge "1" ] && [ "${quick}" -le "${LINE_CNT}" ] && break
+  done
+  local recovery_path=`sed -n "${quick}p" ${TEMP_PATH}/db_backup_path.log`
+  debug doRecovery ${recovery_path} ;
+  exit 0 ;
+}
+
+function recoveryStart(){
+  while true ; do
+        stty erase "^H"
+        echoPlus 32 "1) Recovery auto backupdb."
+        echoPlus 36 "2) Recovery manual backupdb."
+        echoPlus 31 "3) exit."
+        read -p "please select: " quick
+        case $quick in
+	           1) echoPlus 32 "you select recovery auto backupdb." 
+                recoveryByType 0 ; 
+                break;;
+	           2) echoPlus 32 "you select recovery manual backupdb." ; 
+                recoveryByType 1 ; 
+                break;;
+	           3) echoPlus 33 "you select exit." ; exit 1;;
+             *) echoPlus 31 "input error.";;
+        esac
+  done
+}
+
+function doParam(){
+  if [ $# == 0 ] ;then
+     doBackup ${BACKUP_PATH}/$(date +%Y%m%d-%R) 
+     echoPlus 32 "db backup path : ${BACKUP_PATH}/$(date +%Y%m%d-%R)"
+     exit 0;
+  fi
+
+  case "$1" in
+       m|manual)
+          doBackup ${BACKUP_PATH}/manual/$(date +%Y%m%d-%R) 
+          echoPlus 32 "db backup path = ${BACKUP_PATH}/manual/$(date +%Y%m%d-%R)"
+          ;;
+       r|recovery)
+          recoveryStart ;;
+       h|help)
+          help
+          exit 0 ;
+  esac
+}
+
+function doRoll(){
+  # 备份滚动，清理过期备份
+  
+  if [ ".${BACKUP_DAY}" == "." ] || [ "${BACKUP_DAY}" == "0" ] ; then
+     return 0;
+  fi
+  # 清理文件
+  find ${BACKUP_PATH} -type f -mtime +${BACKUP_DAY} -exec rm -rf {} \; 2>/dev/null
+  # 清理空目录
+  find ${BACKUP_PATH} -type d -exec rmdir {} \; 2>/dev/null
+}
+
+config ;
+doRoll ;
+doParam $@ ;

@@ -1,0 +1,203 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  install java
+#   AUTHOR: Liang jian
+#   QQ:  80327044
+#===============================================================================
+#   支持参数化安装
+#   by 2.1.0版本  2015-04-21
+#===============================================================================
+#   命令模式安装
+
+#   必要参数,若没有则进入交互模式安装
+#   8u45 安装特定版本的jdk
+#   6|7|8|X 安装X分支的最新版本
+#   update 升级到当前分支最新版本
+#   -java.install.version=8u45|8|update             No default
+
+#   指定jdk下载路径
+#   -jdk.download.path=/data/www/software/jdk/      default=/data/www/software/jdk/
+
+#   指定资源文件下载路径
+#   -tomcat.res.conf.download.url=http://res.swomc.net/software/PROMETHEUS/etc/tomcat_res.conf      default=http://res.swomc.net/software/PROMETHEUS/etc/tomcat_res.conf
+
+#   示例
+#   ./install_java -java.install.version=6
+#===============================================================================
+
+function config(){
+  DEBUG_FILE_NAME=$(basename $0).log
+  JAVA_INSTALL_VERSION=
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi      
+
+  # 加载PROMETHEUS配置
+  loadConf prometheus.conf ;
+  # 加载TOMCAT配置
+  loadConf tomcat_setenv.conf ;
+
+  loadTomcatRes ;
+}
+
+function doParam(){
+  local param=
+  [ $# == 0 ] && return ;
+  for param in "$@" ; do
+      local paramName=`echo ${param} | awk -F'=' '{print $1}'`
+      local paramValue=`echo ${param} | awk -F'=' '{print $NF}'`
+      case "${paramName}" in
+          -java.install.version)
+              JAVA_INSTALL_VERSION=${paramValue} 
+              processor_param_java_install_version 
+              ;;
+          -jdk.download.path)
+              JDK_DOWNLOAD_PATH=${paramValue} ;;
+          -tomcat.res.conf.download.url)
+              TOMCAT_RES_DOWNLOAD_URL=${paramValue} ;;
+          -h|-help)
+              prometheus_help $(basename $0) 
+              exit 0 ;;
+      esac
+  done
+}
+
+function processor_param_java_install_version(){
+  # jdk 安装版本处理
+  local javaTrunkName
+  # update 参数，升级当前jdk
+  if [ "${JAVA_INSTALL_VERSION}" == "update" ] ; then
+     javaTrunkName=`acqVersion_java`
+     javaTrunkName=`echo ${javaTrunkName} | awk -F. '{print $2}'`
+     JAVA_INSTALL_VERSION=`processor_param_java_install_version_ ${javaTrunkName}`
+     return ;
+  fi 
+  # jdk安装分支默认版本
+  [ ${#JAVA_INSTALL_VERSION} != "1" ] && return ;
+  JAVA_INSTALL_VERSION=`processor_param_java_install_version_ ${JAVA_INSTALL_VERSION}`
+}
+
+function processor_param_java_install_version_(){
+  # jdk 安装版本获取
+  local javaInstallVersion=$1
+  local javaVersion
+  for javaVersion in ${JDK_VERSION_OPT[*]} ; do
+      if [ ${javaVersion::1} == ${javaInstallVersion} ] ; then 
+         echo ${javaVersion}
+         return ;
+      fi
+  done  
+}
+
+function doRemoveJdk(){
+  if [ ".`rpm -qa java jdk`" != "." ] ; then
+     yum -y remove `rpm -qa java jdk`
+  fi
+}
+
+function jdkSelectVersion(){
+  if [ ".${JAVA_INSTALL_VERSION}" == "." ] ; then
+     echoAllJdkVersion ;
+     local jdkMaxCnt=$(( ${#JDK_VERSION_OPT[@]} - 1 ))
+     local quick=
+     stty erase "^H"
+     read -p "please select: " quick
+     if [ "${quick}" -ge "0" ] && [ "${quick}" -le "${jdkMaxCnt}" ] ; then
+        JAVA_INSTALL_VERSION=${JDK_VERSION_OPT[${quick}]}
+     else
+        echoPlus 31 "The wrong choice, exit the program!" ;
+        exit 1 ;
+     fi
+  fi
+  jdkSelectVersion_ ;
+}
+
+function jdkSelectVersion_(){
+  # 输入选择安装的JDK版本
+  local jdkVersion=${JAVA_INSTALL_VERSION}
+  local jdkPkgDownloadUrl=`eval echo "$""JDK_PKG_""${jdkVersion}"`
+  local jdkPkgMd5=`eval echo "$""JDK_PKG_MD5_""${jdkVersion}"`
+  local jdkInstallName=`eval echo "$""JDK_INSTALL_NAME_""${jdkVersion}"`
+  echoPlus 33 "JDK_PKG_DOWNLOAD_URL:${jdkPkgDownloadUrl}" ;
+  jdkInstall ${jdkPkgDownloadUrl} ${jdkPkgMd5} ${jdkInstallName} ;
+}
+
+function jdkInstall(){
+  # 开始安装JDK
+  # @Param jdkDownloadUrl
+  # @Param jdkMd5
+  # @Param installName
+  local jdkDownloadUrl=$1
+  local jdkMd5=$2
+  local inatallName=$3
+  local jdkPkgName=`basename ${jdkDownloadUrl}`
+  #local jdkFile=${JDK_DOWNLOAD_PATH}
+  # 下载jdk
+  execWget ${jdkDownloadUrl} ${JDK_DOWNLOAD_PATH} ${jdkMd5} ;
+  setevn ;
+  local extension=`awk -F. '{print $NF}' <<< ${JDK_DOWNLOAD_PATH}${jdkPkgName}`
+  # 卸载jdk
+  doRemoveJdk ;
+  cd ${JDK_DOWNLOAD_PATH}
+
+  case "${extension}" in
+       bin)
+           chmod +x ${JDK_DOWNLOAD_PATH}${jdkPkgName}
+           ${JDK_DOWNLOAD_PATH}${jdkPkgName} << EOF
+A
+EOF
+           ;;
+       rpm)
+           rpm -i ${JDK_DOWNLOAD_PATH}${jdkPkgName}
+           ;;
+  esac
+  if [ -h "/usr/java/jdk" ] ; then
+  	 unlink "/usr/java/jdk"
+  fi
+  ln -s /usr/java/${inatallName} /usr/java/jdk
+}
+
+function setevn(){
+  # 设置环境变量
+  local isSet=`grep -c 'JAVA_HOME=/usr/java/jdk' /etc/profile`
+  [ "${isSet}" != "0" ] && return ;
+cat << EOF >> /etc/profile
+# JAVA
+JAVA_HOME=/usr/java/jdk
+PATH=\$JAVA_HOME/bin:/usr/bin:/usr/sbin:/bin:/sbin:/usr/X11R6/bin:\$PATH
+CLASSPATH=.:\$JAVA_HOME/lib/tools.jar:\$JAVA_HOME/lib/dt.jar
+export JAVA_HOME
+export PATH
+export CLASSPATH
+# JAVA
+EOF
+}
+
+function doCheckJdk(){
+  # 验证jdk是否安装成功
+  source /etc/profile
+  local jdkVersion=${JAVA_INSTALL_VERSION}
+  local jdkInstallName=`eval echo "$""JDK_INSTALL_NAME_""${jdkVersion}"`
+  jdkInstallName=${jdkInstallName/jdk}
+  local cnt=`${JAVA_HOME}/bin/java -version 2>&1 | grep -c ${jdkInstallName}`
+  if [ ".${cnt}" != ".0" ] ; then
+     ${JAVA_HOME}/bin/java -version
+     echoPlus 32 "Jdk ${jdkInstallName} installation!"
+  else 
+     echoPlus 31 "Jdk ${jdkInstallName} install failed!"
+  fi
+}
+
+# MAIN
+
+config ;
+doParam $@ ;
+jdkSelectVersion ;
+doCheckJdk

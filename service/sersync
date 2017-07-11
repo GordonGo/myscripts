@@ -1,0 +1,120 @@
+#!/bin/bash
+
+### BEGIN INIT INFO
+# Provides:          sersync
+# Required-Start:    $all
+# Required-Stop:     $all
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: starts the sersync
+# Description:       starts sersync using start-stop-daemon
+### END INIT INFO
+
+# Author:   jog
+# website:  null
+# PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:~/bin
+# export PATH
+
+# sersync安装目录   
+SDATH="/usr/local/sersync"
+
+# 配置文件格式 多个可以批量运行
+# ${SDATH}/confxml-${sersyncName1}.xml
+# ${SDATH}/confxml-${sersyncName2}.xml
+   
+function_acq_pid()
+{
+    # 按配置文件名称输出pid
+    local sersyncName=$1
+    local spid=`ps -ef | grep 'sersync2' | grep "confxml-${sersyncName}.xml" | grep -v 'grep' | awk '{print $2}'`
+    echo ${spid}
+}
+
+function_service()
+{
+    # 批量处理服务
+    local action=$1
+    local sersyncName
+    cd ${SDATH}
+    for sersyncName in `ls confxml-*.xml` ; do
+        sersyncName=`function_processor_sersync_name ${sersyncName}`
+        case "${action}" in
+             start) function_start ${sersyncName} ;;
+             stop) function_stop ${sersyncName} ;;
+             kill) function_kill ;;
+             restart) function_restart ${sersyncName} ;;
+             status) function_status ${sersyncName} ;;
+             *)     echo -en "\033[32;49;1m Usage: sersync2 {start|stop|restart|kill|status}\n"
+                    echo -en "\033[39;49;0m" ;;
+        esac  
+    done
+}
+
+function_processor_sersync_name()
+{
+    # 处理文件名  confxml-${sersyncName}  >  ${sersyncName}
+    local sersyncName=$1
+    sersyncName=`sed 's/confxml-//g' <<< ${sersyncName}`
+    sersyncName=`sed 's/.xml//g' <<< ${sersyncName}`
+    echo ${sersyncName}
+}
+
+function_start()
+{
+    # 按配置文件名称启动
+    local sersyncName=$1
+    local spid=`function_acq_pid ${sersyncName}`
+    echo -en "\033[32;49;1mStarting sersync2 ${sersyncName}......\n"
+    echo -en "\033[39;49;0m"
+    if [ -t ${spid} ]; then
+        # /usr/local/sersync/sersync2 -r -d -o /usr/local/sersync/confxml-store.xml
+        ${SDATH}/sersync2 -r -d -o ${SDATH}/confxml-${sersyncName}.xml  > /dev/null 2>&1
+        printf "Serync2 ${sersyncName} is the successful start!\n"
+    else
+    printf "Sersync2 ${sersyncName} is runing!\n"
+    exit 1
+    fi
+}
+   
+function_stop()
+{
+    local sersyncName=$1
+    local spid=`function_acq_pid ${sersyncName}`
+    echo -en "\033[32;49;1mStoping sersync2 ${sersyncName}......\n"
+    echo -en "\033[39;49;0m"
+    if  [ -t ${spid} ]; then
+        printf  "Sersync2 ${sersyncName} program is not runing!\n"
+    else
+        kill ${spid}
+        printf "Sersync2 ${sersyncName} program is stoped\n"
+    fi
+}
+
+function_restart()
+{
+    local sersyncName=$1
+    echo -en "\033[32;49;1mRestart sersync2......\n"
+    echo -en "\033[39;49;0m"
+    function_stop ${sersyncName} ;
+    function_start ${sersyncName} ;
+    printf "Sersync2 ${sersyncName} the successful restart!\n"
+}
+   
+function_kill()
+{
+    killall sersync2
+}
+   
+function_status()
+{
+    local sersyncName=$1
+    if  [ ".`function_acq_pid ${sersyncName}`" == "."  ] > /dev/null 2>&1
+    then
+        printf "Sersync2 ${sersyncName} is down!!!\n"
+    else
+        printf "Sersync2 ${sersyncName} is running now!\n"
+    fi
+}
+
+function_service $@ ;
+exit 0 ;

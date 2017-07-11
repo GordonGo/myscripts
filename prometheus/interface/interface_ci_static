@@ -1,0 +1,311 @@
+#!/bin/bash
+#===============================================================================
+#   SYSTEM REQUIRED:  Linux Centos6
+#   DESCRIPTION:  interface_ci
+#   AUTHOR: Liang Jian
+#   DATE: 2015-08
+#===============================================================================
+#   参数说明
+#   -project.name      项目名称
+#   -environmental     环境名称
+#   -hostgroup         机器组名
+#   -ci.type           持续集成类型(static)
+#
+#   命令模式部署
+#   /usr/local/prometheus/interface/interface_ci -project.name=trade -environmental=production -hostgroup=trade-production -commit.id=xxx -ci.type=java
+#   /usr/local/prometheus/interface/interface_ci_static -pn=home -e=daily -hg=home-daily -cp=daily -ct=static
+
+function config(){
+  #-------配置项--------------------------
+  DEBUG_FILE_NAME=$(basename $0).log
+
+  # 主机组名称
+  HOST_GROUP=
+
+  # 项目名，若缺省则使用${HOST_GROUP}
+  PROJECT_NAME=
+
+  # 环境名称
+  # value=daily:gray:production
+  ENVIRONMENTEL=
+
+  # 并发线程数
+  ANSIBLE_FORKS=1
+
+  # 集成类型
+  # value=java|tomcat|static
+  # default=NULL
+  CI_TYPE=
+
+  COMMIT_ID=
+
+  DEPLOY_HOME=
+
+  # git checkout
+  CHECKOUT_PARAM=
+  
+  ANSIBLE_BIN=/usr/bin/ansible
+
+  CI_CMD_NAME="`head -1 /dev/urandom |md5sum | awk '{print $1}'`.sh"
+
+  # 加载函数
+  test ".${PROMETHEUS_HOME}" = . && PROMETHEUS_HOME=/usr/local/prometheus
+  if [ -r "${PROMETHEUS_HOME}/funcs/funcs" ] ; then
+     . ${PROMETHEUS_HOME}/funcs/funcs
+  else
+     echo "${PROMETHEUS_HOME}/funcs/funcs not found"
+     exit 1 ;
+  fi      
+
+  # 加载持续集成接口配置
+  loadConf interface_ci.conf ;
+
+  # 计算配置行
+  STATIC_PROJECTS_OPT_CNT=$(( ${#STATIC_PROJECTS_OPT[*]} / 5 ))  
+  JAVA_PROJECTS_OPT_CNT=$(( ${#JAVA_PROJECTS_OPT[*]} / 4 ))  
+}
+
+#----------通用
+function acq_static_project_value(){
+  local name=$1
+  local returnType=$2
+  local index=`acq_static_project_index_by_name ${name}`
+  local value=`acq_static_projects_opt ${returnType} ${index}`
+  echo ${value}
+}
+
+function acq_static_project_index_by_name(){
+  local name=$1
+  local i
+  for((i=0;i<${STATIC_PROJECTS_OPT_CNT};i++));do
+     if [ ${name} == `acq_static_projects_opt name $i` ] ; then
+        echo $i ;
+        break ;
+     fi
+  done
+}
+
+function acq_static_projects_opt(){
+  # 提取 JAVA_PROJECTS_OPT 中的矩阵数据
+  # @param project_name:host_group:environmental:properties
+  # @param index
+  # return file or key or value
+  local getType=$1
+  local index=$2
+  IFS=$'\n\t'
+  case "${getType}" in
+       name)
+          index=$(( ${index} * 5 ))     ;;
+       host_group)  
+          index=$(( ${index} * 5 + 1 )) ;;
+       environmental)
+          index=$(( ${index} * 5 + 2 )) ;;
+       deploy_home)
+          index=$(( ${index} * 5 + 3 )) ;;
+       checkout_param)
+          index=$(( ${index} * 5 + 4 )) ;;
+
+  esac
+  echo ${STATIC_PROJECTS_OPT[${index}]}
+}
+
+function acq_java_project_value(){
+  local name=$1
+  local returnType=$2
+  local index=`acq_java_project_index_by_name ${name}`
+  local value=`acq_java_projects_opt ${returnType} ${index}`
+  echo ${value}
+}
+
+function acq_java_project_index_by_name(){
+  local name=$1
+  local i
+  for((i=0;i<${JAVA_PROJECTS_OPT_CNT};i++));do
+     if [ ${name} == `acq_java_projects_opt name $i` ] ; then
+        echo $i ;
+        break ;
+     fi
+  done
+}
+
+function acq_java_projects_opt(){
+  # 提取 JAVA_PROJECTS_OPT 中的矩阵数据
+  # @param project_name:host_group:environmental:properties
+  # @param index
+  # return file or key or value
+  local getType=$1
+  local index=$2
+  IFS=$'\n\t'
+  case "${getType}" in
+       name)
+          index=$(( ${index} * 4 ))     ;;
+       host_group)  
+          index=$(( ${index} * 4 + 1 )) ;;
+       environmental)
+          index=$(( ${index} * 4 + 2 )) ;;
+       properties)
+          index=$(( ${index} * 4 + 3 )) ;;
+  esac
+  echo ${JAVA_PROJECTS_OPT[${index}]}
+}
+
+
+#----------通用
+
+function doParam(){
+  # 处理参数
+  local param=
+  [ $# == 0 ] && return ;
+  for param in "$@" ; do
+      local paramName=`echo ${param} | awk -F'=' '{print $1}'`
+      local paramValue=`echo ${param} | awk -F'=' '{print $NF}'`
+      case "${paramName}" in
+          -project.name|-pn)
+              PROJECT_NAME=${paramValue} ;;
+          -hostgroup|-hg)
+              HOST_GROUP=${paramValue} ;;
+          -ci.type|-ct)
+              CI_TYPE=${paramValue} ;;
+          -environmental|-e)
+              ENVIRONMENTEL=${paramValue} ;;
+          -checkout.param|-cp)
+              CHECKOUT_PARAM=${paramValue} ;;
+          -commit.id|-cid)
+              COMMIT_ID=${paramValue} ;;
+          -h|-help)
+              prometheus_help $(basename $0) 
+              exit 0 ;;    
+      esac
+  done
+}
+
+function deployment(){
+  do_check ;
+  eval deployment_${CI_TYPE}
+}
+
+function do_check(){
+  # 校验 PROJECT_NAME
+  test ".${PROJECT_NAME}" = . && echoPlus error "Not found project name !" && deploy_failure ;
+  # 校验 HOST_GROUP
+  test ".${HOST_GROUP}" = . && echoPlus error "Not found host group !" && deploy_failure ;
+  # 校验 CI_TYPE
+  test ".${CI_TYPE}" = . && echoPlus error "Not found ci type !" && deploy_failure ;
+  eval do_check_${CI_TYPE} ;
+}
+
+function do_check_java(){
+  # 校验 ENVIRONMENTEL
+  test ".${ENVIRONMENTEL}" = . && echoPlus error "Not found environmental daily:gray:production !" && deploy_failure ;
+  local environmental=`acq_java_project_value ${PROJECT_NAME} environmental`
+  local isFind=`echo ${environmental} | grep -c ${ENVIRONMENTEL}`
+  test ${isFind} = 0 && echoPlus error "Not found environmental daily:gray:production !" && deploy_failure ;
+}
+
+function do_check_static(){
+  # 校验 ENVIRONMENTEL
+  test ".${ENVIRONMENTEL}" = . && echoPlus error "Not found environmental daily:gray:production !" && deploy_failure ;
+  local environmental=`acq_static_project_value ${PROJECT_NAME} environmental`
+  local isFind=`echo ${environmental} | grep -c ${ENVIRONMENTEL}`
+  test ${isFind} = 0 && echoPlus error "Not found environmental daily:gray:production !" && deploy_failure ;
+  # 校验 DEPLOY_HOME
+  DEPLOY_HOME=`acq_static_project_value ${PROJECT_NAME} deploy_home`
+  test ".${DEPLOY_HOME}" = . && echoPlus error "Not found deploy home !" && deploy_failure ;
+  local checkout_param=`acq_static_project_value ${PROJECT_NAME} checkout_param`
+  # 校验 CHECKOUT_PARAM
+  test ".${CHECKOUT_PARAM}" = . && echoPlus error "Not found checkout param !" && deploy_failure ;
+  local checkout_param=`acq_static_project_value ${PROJECT_NAME} environmental`
+
+
+}
+
+function deployment_static(){
+   # git reset && git checkout daily|gray|master && git pull
+   local ci_cmd
+   if [ ".${COMMIT_ID}" == "." ] ; then
+      ci_cmd="${ANSIBLE_BIN} ${HOST_GROUP} -sudo -f ${ANSIBLE_FORKS} -m shell -a \
+             'cd ${DEPLOY_HOME} && \
+             git reset && \
+             git checkout ${CHECKOUT_PARAM} && \
+             git pull'"
+   else
+      ci_cmd="${ANSIBLE_BIN} ${HOST_GROUP} -sudo -f ${ANSIBLE_FORKS} -m shell -a \
+             'cd ${DEPLOY_HOME} && \
+             git reset -head ${COMMIT_ID}'"
+   fi             
+   echo ${ci_cmd} > /data/www/temp/${CI_CMD_NAME}
+   /bin/bash /data/www/temp/${CI_CMD_NAME} && rm -f /data/www/temp/${CI_CMD_NAME} ;
+}
+
+function deployment_java(){
+  deployment_java_rename_war_pkg ;
+  #deployment_java_tomcat_stop ;
+  deployment_java_deployment_project ;
+  #deployment_java_tomcat_start ;
+  deployment_java_rm_war_pkg ;
+}
+
+function deployment_java_rename_war_pkg(){
+  mv /data/www/ROOT/static/deploy/${PROJECT_NAME}/${ENVIRONMENTEL}/pkg/${PROJECT_NAME}-*.war /data/www/ROOT/static/deploy/${PROJECT_NAME}/${ENVIRONMENTEL}/pkg/${PROJECT_NAME}.war 2>/dev/null
+}
+
+function deployment_java_deployment_project() {
+  # 项目部署
+  # interface_ci -project.name=trade -environmental=production -hostgroup=trade-production -ci.type=java
+  local properties=`acq_java_project_value ${PROJECT_NAME} properties`
+  local ci_cmd="${ANSIBLE_BIN} ${HOST_GROUP} -sudo -f ${ANSIBLE_FORKS} -a \
+                 \"${PROMETHEUS_HOME}/bin/deployment_project \
+                 -tomcat.service.restart=true \
+                 -tomcat.app.name=${PROJECT_NAME} \
+                 -tomcat.project.deployment.pkg.download.url=${CMDB_RES_SERVER}/${PROJECT_NAME}/${ENVIRONMENTEL}/pkg/${PROJECT_NAME}.war"
+  # if [ ".${ENVIRONMENTEL}" == ".daily" ] || [ "${properties}" == "-" ] ; then
+  if [ "${properties}" == "-" ] ; then
+     ci_cmd="${ci_cmd}\""
+  else
+     ci_cmd="${ci_cmd} -tomcat.project.conf.download.url=${CMDB_RES_SERVER}/${PROJECT_NAME}/${ENVIRONMENTEL}/ \
+                 -tomcat.project.conf.download.name=${properties}\""
+  fi
+  echo "${ANSIBLE_BIN} ${HOST_GROUP} -sudo -a \"${PROMETHEUS_HOME}/bin/tomcat ${PROJECT_NAME} stop\"" >> /data/www/temp/${CI_CMD_NAME}
+  echo "${ANSIBLE_BIN} ${HOST_GROUP} -sudo -a \"${PROMETHEUS_HOME}/bin/tomcat ${PROJECT_NAME} kill\"" >> /data/www/temp/${CI_CMD_NAME}
+  echo ${ci_cmd} > /data/www/temp/${CI_CMD_NAME}
+  echo "sleep 15" >> /data/www/temp/${CI_CMD_NAME}
+  echo "${ANSIBLE_BIN} ${HOST_GROUP} -sudo -a \"${PROMETHEUS_HOME}/bin/tomcat\"" >> /data/www/temp/${CI_CMD_NAME}
+  /bin/bash /data/www/temp/${CI_CMD_NAME} && rm -f /data/www/temp/${CI_CMD_NAME} ;
+}
+
+function deployment_java_rm_war_pkg(){
+  rm -f /data/www/ROOT/static/deploy/${PROJECT_NAME}/${ENVIRONMENTEL}/pkg/*.war
+}
+
+function deployment_tomcat(){
+  # 升级tomcat版本
+  # interface_ci -project.name=trade -environmental=production -hostgroup=trade-production -ci.type=tomcat
+  local ci_cmd="${ANSIBLE_BIN} ${HOST_GROUP} -sudo -f ${ANSIBLE_FORKS} -a \
+                 \"${PROMETHEUS_HOME}/bin/install_tomcat \
+                 -tomcat.install.version=7 \
+                 -tomcat.install.name=all \
+                 -tomcat.service.start=true \
+                 -tomcat.setenv.file=${CMDB_RES_SERVER}/${PROJECT_NAME}/tomcat_setenv.conf\""
+  echo "${ANSIBLE_BIN} ${HOST_GROUP} -sudo -a \"${PROMETHEUS_HOME}/bin/tomcat stop\"" >> /data/www/temp/${CI_CMD_NAME}
+  echo ${ci_cmd} > /data/www/temp/${CI_CMD_NAME}
+  #echo "sleep 5" >> /data/www/temp/${CI_CMD_NAME}
+  echo "${ANSIBLE_BIN} ${HOST_GROUP} -sudo -a \"${PROMETHEUS_HOME}/bin/tomcat\"" >> /data/www/temp/${CI_CMD_NAME}
+  /bin/bash /data/www/temp/${CI_CMD_NAME} && rm -f /data/www/temp/${CI_CMD_NAME} ;
+  [ $? -ne 0 ] && deploy_failure ;
+}
+
+
+
+function deploy_failure(){
+     echoPlus error "Deploy Failure !!!"
+     exit 1
+}
+
+config ;
+checkUser ;
+doParam $@ ;
+deployment ;
+exit 0 ;
+
+
+
